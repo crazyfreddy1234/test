@@ -1,0 +1,16 @@
+
+
+
+
+
+MOB---------
+
+data.home_pos  ==  8
+data.standstill    true
+data.team_num  ==  3
+
+
+
+
+CENTER------------
+data.centerid    ==    (data.home_pos)
