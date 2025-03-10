@@ -528,6 +528,7 @@ end
 local Badge         = require "widgets/badge"
 local PowerMeter    = require "widgets/test_widget"
 local SkillMeter    = require "widgets/skill_widget"
+
 AddClassPostConstruct("widgets/statusdisplays_lavaarena", function(self)
 	self.powerwidget = self:AddChild(PowerMeter(self.owner))
 	self.powerwidget:SetPosition(-80,-20,0)
