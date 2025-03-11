@@ -12,6 +12,8 @@ local prefabs = {
 
     "wave_shimmer",
     "wave_shore",
+    "slurtle",
+    "flower_cave",
 }
 --------------------------------------------------------------------------
 local map_values = {
