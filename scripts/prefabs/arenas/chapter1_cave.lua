@@ -33,6 +33,8 @@ local function common_postinit(inst)
     TheWorld:PushEvent("overrideambientlighting", Point(0, 0, 0))
 	TheWorld:PushEvent("overridecolourcube", "images/colour_cubes/snow_cc.tex")
 --------------------------------------------------------------------------
+    -----CAVE----
+
     inst.components.ambientsound:SetReverbPreset("cave")
     inst.components.ambientsound:SetWavesEnabled(false)
 --------------------------------------------------------------------------  

@@ -272,7 +272,7 @@ end)
 local function DontRemoveCorpse(inst)
     if inst.components.health then
         inst.components.health.nofadeout = true
-        inst:DoTaskInTime(1,function()
+        inst:DoTaskInTime(2,function()
             inst.components.health:Kill()
             inst:AddTag("NOCLICK")
         end)

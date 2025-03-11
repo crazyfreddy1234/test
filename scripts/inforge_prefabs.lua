@@ -22,14 +22,15 @@ return {
 	"winter_fx",
 
 
+	--MAP PREFABS--
+	"arena_prefab/dunguen_center",
+	"arena_prefab/inforge_candle_staff",
+	"arena_prefab/inforge_candlefire",
+
+
 	--MAPS--
 	--"arenas/my_map",
 	"arenas/chapter1_cave",
-
-
-	--MAP PREFABS--
-	"arena_prefab/dunguen_center",
-
 
 	--OTHER--
 	"mathtalker",
