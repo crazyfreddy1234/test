@@ -175,7 +175,7 @@ local function common_postinit(inst)
 	
 	if inst._light then
 		inst._light.Light:SetColour(182/255, 156/255, 255/255)
-        inst._light.Light:SetRadius(4)
+        inst._light.Light:SetRadius(3.4)
 	end
 end
 

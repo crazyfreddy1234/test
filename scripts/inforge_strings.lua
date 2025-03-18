@@ -1,5 +1,10 @@
 local _G = GLOBAL
 local STRINGS = _G.STRINGS
+local NAMES   = STRINGS.NAMES
+local REFORGED_STRINGS = STRINGS.REFORGED
+local CASTAOE = STRINGS.ACTIONS.CASTAOE
+local WEAPONS = REFORGED_STRINGS.WEAPONS
+
 
 STRINGS.NAMES.INFORGE_INFERNALSTAFF = "Magic Staff\n+5% Move Speed"
 STRINGS.NAMES.INFORGE_BLACKSMITHSEDGE = "Defender Sword\n-10% Move Speed"
@@ -178,7 +183,7 @@ STRINGS.REFORGED.DIALOGUE.Reflection={
 }
 
 
---WEAPON_SPAWN_NAME
+--WEAPON NAMES
 STRINGS.REFORGED.WEAPONS.INFORGE_BLACKSMITHSEDGE={
 	NAME = "Inforge Sword",
     DESC = "You can lift that?!",
@@ -187,6 +192,15 @@ STRINGS.REFORGED.WEAPONS.INFORGE_BLACKSMITHSEDGE={
             NAME = "Parry",
             DESC = "Nothing can get through this blade's heavy hilt!",
         },
+    },
+}
+
+NAMES.INFORGE_CANDLE_STAFF = "Brighter Candle Staff" 
+CASTAOE.INFORGE_CANDLE_STAFF = "Summon Light Turret"
+WEAPONS.INFORGE_CANDLE_STAFF = {
+    NAME = NAMES.INFORGE_CANDLE_STAFF,
+    DESC = "TODO",
+    ABILITIES = {
     },
 }
 

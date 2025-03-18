@@ -288,9 +288,37 @@ local function RemoveLoot(inst)
     end
 end
 
+local function NoEquippable(inst)
+    inst:DoTaskInTime(0,function()
+        inst:RemoveComponent("equippable")
+    end)
+end
+
+local function RemoveClick(inst)
+    inst:DoTaskInTime(0,function()
+        inst:AddTag("NOCLICK")
+    end)
+end
+
+
+
+--DUNGUEN--
+
 AddPrefabPostInit("slurtle", function(inst)
     if _G.INFORGE_COMMON_FNS.IsDungeon() then
         RemoveLoot(inst)
         DontRemoveCorpse(inst)
+    end
+end)
+
+AddPrefabPostInit("lantern", function(inst)
+    if _G.INFORGE_COMMON_FNS.IsDungeon() then
+        NoEquippable(inst)
+    end
+end)
+
+AddPrefabPostInit("backpack", function(inst)
+    if _G.INFORGE_COMMON_FNS.IsDungeon() then
+        RemoveClick(inst)
     end
 end)

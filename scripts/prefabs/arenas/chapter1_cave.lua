@@ -2,18 +2,28 @@ require("prefabs/world")
 local TileManager = require "tilemanager"
 local GroundTiles = require "worldtiledefs"
 local assets = { -- TODO which assets are needed? add to common fns?
-
+    Asset("SCRIPT", "scripts/prefabs/world.lua"),
 }
 local prefabs = {
+    "grotto_waterfall_big",
     "lavaarena_portal",
     "lavaarena_groundtargetblocker",
     "lavaarena_center",
     "lavaarena_spawner",
-
     "wave_shimmer",
     "wave_shore",
+    "lantern",
+    "backpack",
     "slurtle",
+    "firepit",
     "flower_cave",
+    "skeleton",
+    "cavelight",
+    "cavelight_small",
+    "cavelight_tiny",
+    "grotto_waterfall_small1",
+    "grotto_waterfall_small2",
+    
 }
 --------------------------------------------------------------------------
 local map_values = {
