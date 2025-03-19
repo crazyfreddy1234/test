@@ -1,8 +1,8 @@
-require("prefabs/world")
 local TileManager = require "tilemanager"
 local GroundTiles = require "worldtiledefs"
 local assets = { -- TODO which assets are needed? add to common fns?
     Asset("SCRIPT", "scripts/prefabs/world.lua"),
+
 }
 local prefabs = {
     "grotto_waterfall_big",
@@ -10,6 +10,7 @@ local prefabs = {
     "lavaarena_groundtargetblocker",
     "lavaarena_center",
     "lavaarena_spawner",
+
     "wave_shimmer",
     "wave_shore",
     "lantern",
@@ -51,11 +52,6 @@ local function common_postinit(inst)
     mod_protect_TileManager = false
     inst:AddComponent("wavemanager")
     inst.Map:SetTransparentOcean(true)
-    
-    if not TheNet:IsDedicated() then
-        inst.Map:DoOceanRender(true)
-    end
-    mod_protect_TileManager = true
 end
 --------------------------------------------------------------------------
 local function master_postinit(inst)
