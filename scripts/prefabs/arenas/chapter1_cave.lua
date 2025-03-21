@@ -52,6 +52,11 @@ local function common_postinit(inst)
     mod_protect_TileManager = false
     inst:AddComponent("wavemanager")
     inst.Map:SetTransparentOcean(true)
+--------------------------------------------------------------------------  
+    if not TheNet:IsDedicated() then
+        print("OCEAN COLOR UPDATING")
+        inst.Map:DoOceanRender(true)
+    end
 end
 --------------------------------------------------------------------------
 local function master_postinit(inst)
