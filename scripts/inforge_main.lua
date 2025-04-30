@@ -1,9 +1,8 @@
 local STRINGS = _G.STRINGS
 local RF_DATA = _G.REFORGED_DATA
-local env = env or GLOBAL
 
+local env = env or GLOBAL or _G
 env.Node = env.Node or {}
-
 local _OldAddEntity = env.Node.AddEntity
 
 local AddSGSwineclopsHard=function(sg)
@@ -44,22 +43,6 @@ local AddSGSwineclopsHard=function(sg)
     end
 end
 AddStategraphPostInit("swineclops_hard",AddSGSwineclopsHard)
-
-
-
-
-env.Node.AddEntity = function(self, prefab, points_x, points_y, current_pos_idx, entitiesOut, width, height, prefab_list, prefab_data, rand_offset)
-    local tile = env.WorldSim:GetTile(points_x[current_pos_idx], points_y[current_pos_idx])
-
-    if _G.INFORGE_COMMON_FNS.IsDungeon() then
-        self:PopulateWorld_AddEntity(prefab, points_x[current_pos_idx], points_y[current_pos_idx], tile, entitiesOut, width, height, prefab_list, prefab_data, rand_offset)
-         return
-     end
-
-    -- 기존 함수 호출 (원래 기능 유지)
-    _OldAddEntity(self, prefab, points_x, points_y, current_pos_idx, entitiesOut, width, height, prefab_list, prefab_data, rand_offset)
-end
-
 
 
 AddClassPostConstruct("widgets/game_settings_panel", function(self)

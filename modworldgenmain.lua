@@ -4,6 +4,8 @@ local _G = GLOBAL
 modimport("scripts/map/graphnode.lua")
 
 
+
+
 if _G.rawget(_G, "REFORGED_GROUND_TYPES") then
     local Layouts = _G.require("map/layouts").Layouts
     local StaticLayout = _G.require("map/static_layout")

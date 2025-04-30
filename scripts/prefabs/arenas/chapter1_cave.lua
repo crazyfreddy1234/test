@@ -50,6 +50,17 @@ local function common_postinit(inst)
 
     inst.components.ambientsound:SetReverbPreset("cave")
     inst.components.ambientsound:SetWavesEnabled(false)
+--------------------------------------------------------------------------
+    local map = TheWorld.Map 
+    local tuning = TUNING.OCEAN_SHADER 
+
+    TheWorld.Dunguen_Names = "chapter1_cave"
+    
+    map:SetOceanEnabled(true) 
+    map:SetOceanTextureBlurParameters(tuning.TEXTURE_BLUR_PASS_SIZE, tuning.TEXTURE_BLUR_PASS_COUNT) 
+    map:SetOceanNoiseParameters0(tuning.NOISE[1].ANGLE, tuning.NOISE[1].SPEED, tuning.NOISE[1].SCALE, tuning.NOISE[1].FREQUENCY) 
+    map:SetOceanNoiseParameters1(tuning.NOISE[2].ANGLE, tuning.NOISE[2].SPEED, tuning.NOISE[2].SCALE, tuning.NOISE[2].FREQUENCY) 
+    map:SetOceanNoiseParameters2(tuning.NOISE[3].ANGLE, tuning.NOISE[3].SPEED, tuning.NOISE[3].SCALE, tuning.NOISE[3].FREQUENCY)
 --------------------------------------------------------------------------  
     mod_protect_TileManager = true
     inst:AddComponent("wavemanager")

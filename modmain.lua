@@ -26,7 +26,7 @@ modimport("scripts/postinit/inforge_prefabpostinit.lua")
 --------------assets--------------------
 modimport("scripts/inforge_strings.lua")
 _G.TUNING.INFORGE         = require("inforge_tuning")
-_G.INFORGE_COMMON_FNS     = require( "inforge_common_functions")
+_G.INFORGE_COMMON_FNS     = require("inforge_common_functions")
 PrefabFiles               = require("inforge_prefabs")
 Assets                    = require("inforge_assets")
 
@@ -223,3 +223,4 @@ AddSimPostInit(function()
     end
 end)
 
+GLOBAL.MY_MOD_CURRENT_WORLD_NAME = nil
