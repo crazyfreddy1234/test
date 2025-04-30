@@ -36,6 +36,8 @@ local map_values = {
 --------------------------------------------------------------------------
 local function common_preinit(inst)
     COMMON_FNS.MapPreInit(inst, map_values)
+
+    
 end
 --------------------------------------------------------------------------
 local function common_postinit(inst)
@@ -49,7 +51,7 @@ local function common_postinit(inst)
     inst.components.ambientsound:SetReverbPreset("cave")
     inst.components.ambientsound:SetWavesEnabled(false)
 --------------------------------------------------------------------------  
-    mod_protect_TileManager = false
+    mod_protect_TileManager = true
     inst:AddComponent("wavemanager")
     inst.Map:SetTransparentOcean(true)
 --------------------------------------------------------------------------  

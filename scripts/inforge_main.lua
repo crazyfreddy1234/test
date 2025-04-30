@@ -1,5 +1,10 @@
 local STRINGS = _G.STRINGS
 local RF_DATA = _G.REFORGED_DATA
+local env = env or GLOBAL
+
+env.Node = env.Node or {}
+
+local _OldAddEntity = env.Node.AddEntity
 
 local AddSGSwineclopsHard=function(sg)
     local RPXT = RPXT
@@ -40,6 +45,20 @@ local AddSGSwineclopsHard=function(sg)
 end
 AddStategraphPostInit("swineclops_hard",AddSGSwineclopsHard)
 
+
+
+
+env.Node.AddEntity = function(self, prefab, points_x, points_y, current_pos_idx, entitiesOut, width, height, prefab_list, prefab_data, rand_offset)
+    local tile = env.WorldSim:GetTile(points_x[current_pos_idx], points_y[current_pos_idx])
+
+    if _G.INFORGE_COMMON_FNS.IsDungeon() then
+        self:PopulateWorld_AddEntity(prefab, points_x[current_pos_idx], points_y[current_pos_idx], tile, entitiesOut, width, height, prefab_list, prefab_data, rand_offset)
+         return
+     end
+
+    -- 기존 함수 호출 (원래 기능 유지)
+    _OldAddEntity(self, prefab, points_x, points_y, current_pos_idx, entitiesOut, width, height, prefab_list, prefab_data, rand_offset)
+end
 
 
 
@@ -528,6 +547,7 @@ end
 local Badge         = require "widgets/badge"
 local PowerMeter    = require "widgets/test_widget"
 local SkillMeter    = require "widgets/skill_widget"
+local TeamHud       = require "widgets/skill_widget"
 
 AddClassPostConstruct("widgets/statusdisplays_lavaarena", function(self)
 	self.powerwidget = self:AddChild(PowerMeter(self.owner))
@@ -535,13 +555,18 @@ AddClassPostConstruct("widgets/statusdisplays_lavaarena", function(self)
     
     self.powerwidget.circleframe:Hide()
     self.powerwidget.anim:Hide()
-    self.powerwidget.num:Hide()  
+    self.powerwidget.num:Hide()
 
     self.skillwidget = self:AddChild(SkillMeter(self.owner))
     self.skillwidget:SetPosition(-200,-20,0)
     self.skillwidget.circleframe:Hide()
     self.skillwidget.anim:Hide()
     self.skillwidget.num:Hide()  
+
+
+    self.teamhud = self:AddChild(TeamHud(self.owner))
+    self.teamhud:SetPosition(-200,-20,0)
+    self.teamhud:Show()
 end)
 
 AddPlayerPostInit(function(inst)
@@ -565,11 +590,41 @@ AddPlayerPostInit(function(inst)
     inst:ListenForEvent("gogglevisonenabledirty", GoggleVisonEnableDirty)
     inst:ListenForEvent("fumeover_redenabledirty", FumeOver_RedEnableDirty)
     inst:ListenForEvent("poweronoffdirty",PowerOnOffDirty)
-
     inst.PowerOnOff:set(false)
+    inst:ListenForEvent("player_portal_spawn", EnablePowerOnServer)
+
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+    inst.net_health_percent = net_float(inst.GUID, "playerhud.net_health_percent", "healthdirty")
+
+    local function OnHealthDelta(inst, data)
+        if inst.net_health_percent then
+            local percent = inst.components.health:GetPercent()
+            inst.net_health_percent:set(percent)
+        end
+    end
+
+    inst:ListenForEvent("healthdelta", OnHealthDelta)
+
     
 
-    inst:ListenForEvent("player_portal_spawn", EnablePowerOnServer)
+
+
+
+
+    if not _G.TheNet:IsDedicated() then
+        inst:DoTaskInTime(0, function()
+            if inst.HUD then
+                inst.HUD.teammatehud = inst.HUD:AddChild(require("widgets/teamhud")(inst))
+                inst:DoPeriodicTask(0, function()
+                    if inst.HUD and inst.HUD.teammatehud then
+                        inst.HUD.teammatehud:OnUpdate()
+                    end
+                end)
+            end
+        end)
+    end
 end)
 
 AddModRPCHandler("Infernal_Forge_RPC", "UsePower", UseOneKey)
@@ -630,8 +685,6 @@ AddComponentPostInit("lavaarenaevent",function(self)
 end)
 
 
-
-
 _G.AddDebuff("debuff_flower_dmg",   {atlas = "images/debuff_flower_dmg.xml", tex = "debuff_flower_dmg.tex"})
 _G.AddDebuff("debuff_flower_def",   {atlas = "images/debuff_flower_def.xml", tex = "debuff_flower_def.tex"})
 _G.AddDebuff("debuff_flower_speed", {atlas = "images/debuff_flower_speed.xml", tex = "debuff_flower_speed.tex"})
@@ -646,3 +699,31 @@ local CH1_CAVE = RF_DATA.maps.chapter1_cave
 
 CH1_CAVE.is_dungeon = true
 CH1_CAVE.must_waveset = "Reflection"
+
+
+
+
+
+
+
+
+ModRPCName("Infernal_Forge_RPC", "item_click")
+ModRPCName("Infernal_Forge_RPC", "item_right_click")
+
+AddModRPCHandler("Infernal_Forge_RPC", "item_click", function(user, target_guid)
+    local target = Ents[target_guid]
+    local item = user.components.inventory and user.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+
+    if item and item.components.infernal_weaponskill then
+        item.components.infernal_weaponskill:Cast_LClick(item, user, target)
+    end
+end)
+
+AddModRPCHandler("Infernal_Forge_RPC", "item_right_click", function(user, target_guid)
+    local target = Ents[target_guid]
+    local item = user.components.inventory and user.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+
+    if item and item.components.infernal_weaponskill then
+        item.components.infernal_weaponskill:Cast_RClick(item, user, target)
+    end
+end)

@@ -57,6 +57,28 @@ local INFORGED_TUNING = {
 		RADIUS        = 2,
 		EXPLODE_DAMAGE= 266,
 	},
+
+	CH1_BOSS_BOARILLA = {
+		HEALTH            = 20020,
+		RUNSPEED          = 9, --Runner speed is 7.2 with +20 speed boost
+		WALKSPEED         = 6,
+		DAMAGE            = 150,
+		ATTACK_RANGE      = 3,
+		HIT_RANGE         = 3,
+		AOE_HIT_RANGE     = 2.25, -- TODO used?
+		FRONT_AOE_OFFSET  = 3,
+		GUARD_TRIGGER_1   = 0.5,
+		JUMP_ATTACK_RANGE = 8, -- TODO used?
+		JUMP_HIT_RANGE    = 4, -- TODO used?
+		ATTACK_PERIOD     = 3.33,
+		SLAM_CD           = 10,
+		SNIPER_DPS_CD     = 10,
+		BATTLECRY_CD      = 20, -- TODO could be 10 or even 5 still hmmm
+		FOSSIL_TIME       = 1, -- TODO adjust to real value
+		ATTACK_KNOCKBACK  = 20, --was 25.
+		ENTITY_TYPE       = "ENEMIES",
+		WEIGHT            = 10,
+	},
 	
 }
 

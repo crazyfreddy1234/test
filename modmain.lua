@@ -23,7 +23,6 @@ modimport(gametype.."blossoms.lua")
 modimport("scripts/inforge_main.lua")
 modimport("scripts/postinit/inforge_anyprefab.lua")
 modimport("scripts/postinit/inforge_prefabpostinit.lua")
-
 --------------assets--------------------
 modimport("scripts/inforge_strings.lua")
 _G.TUNING.INFORGE         = require("inforge_tuning")
@@ -209,6 +208,13 @@ local Reflection_exp = {
     {desc = "REFLECTION_MILESTONE_2", val = TUNING.FORGE.EXP.WAVESETS.ROUND_2*5,atlas = "images/mirror.xml", tex = "mirror.tex"},
     {desc = "REFLECTION_WIN",         val = TUNING.FORGE.EXP.WAVESETS.VICTORY*5,atlas = "images/mirror.xml", tex = "mirror.tex"},
 }
+
+
+
+
+
+
+
 AddSimPostInit(function()
     if TUNING.HALLOWED_FORGE then 
         AddWaveset("Reflection",3,Reflection_icon,Reflection_exp,nil,3.5,"hallowedforge")

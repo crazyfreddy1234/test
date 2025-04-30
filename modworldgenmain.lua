@@ -1,4 +1,9 @@
 local _G = GLOBAL
+
+
+modimport("scripts/map/graphnode.lua")
+
+
 if _G.rawget(_G, "REFORGED_GROUND_TYPES") then
     local Layouts = _G.require("map/layouts").Layouts
     local StaticLayout = _G.require("map/static_layout")
@@ -83,6 +88,7 @@ if _G.rawget(_G, "REFORGED_GROUND_TYPES") then
         layout_position   = _G.LAYOUT_POSITION.CENTER,
         disable_transform = true,
     })
+    
     Layouts["CHAPTER1"].ground_types = _G.REFORGED_GROUND_TYPES,       
     _G.AddStartLocation("chapter1_cave", {
         name           = _G.STRINGS.UI.SANDBOXMENU.DEFAULTSTART,
@@ -94,7 +100,7 @@ if _G.rawget(_G, "REFORGED_GROUND_TYPES") then
         location = "chapter1_cave",
         version = 3,
         overrides = {
-            task_set = "lavaarena_taskset",--"(TODO)_arena_taskset",
+            task_set = "lavaarena_taskset",
             start_location = "CHAPTER1",
             season_start = "default",
             world_size = "huge",
@@ -131,6 +137,7 @@ if _G.rawget(_G, "REFORGED_GROUND_TYPES") then
             wormhole_prefab = nil,
             roads           = "never",
             --has_ocean = true,
+            dunguen_map     = true ,
         },
         required_prefabs = {
             "lavaarena_portal",

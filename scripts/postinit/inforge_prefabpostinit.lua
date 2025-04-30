@@ -203,6 +203,21 @@ AddPrefabPostInit("livingstaff", function(inst)
             return name .. (("\n+" .. tostring(randomdamage) .. " Heal Rate" .. "\nTargeting Heal (ctrl + attack to player)") or "")
         end
     end
+
+
+
+
+    local function HealTarget(inst, caster, target)
+        target.components.health:DoDelta(1)
+    end
+
+    local function HugeHealTarget(inst, caster, target)
+        target.components.health:DoDelta(10)
+    end
+
+    inst:AddComponent("infernal_weaponskill")
+    inst.components.infernal_weaponskill:Set_LClickFn(HealTarget)
+    inst.components.infernal_weaponskill:Set_RClickFn(HugeHealTarget)
 end)
 
 AddPrefabPostInit("infernalstaff", function(inst)
@@ -320,5 +335,17 @@ end)
 AddPrefabPostInit("backpack", function(inst)
     if _G.INFORGE_COMMON_FNS.IsDungeon() then
         RemoveClick(inst)
+    end
+end)
+
+AddPrefabPostInit("grotto_waterfall_small1", function(inst)
+    if _G.INFORGE_COMMON_FNS.IsDungeon() then
+        inst.AnimState:SetLightOverride(0)
+    end
+end)
+
+AddPrefabPostInit("grotto_waterfall_small2", function(inst)
+    if _G.INFORGE_COMMON_FNS.IsDungeon() then
+        inst.AnimState:SetLightOverride(0)
     end
 end)

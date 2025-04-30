@@ -131,4 +131,8 @@ AddPrefabPostInitAny(function(inst)
             end
         end
     end
+
+    inst:ListenForEvent("onfallinvoid",function(inst)
+        print(inst .. "is fall into void!")
+    end)
 end)
