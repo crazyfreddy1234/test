@@ -211,8 +211,15 @@ local Reflection_exp = {
 
 
 
-
-
+local function RefreshHud()
+    _G.TheWorld:DoTaskInTime(0, function()
+        for i, player in ipairs(_G.AllPlayers) do
+            if player.HUD and player.HUD.teammatehud then
+                player.HUD.teammatehud:RefreshTeammates()
+            end
+        end
+    end)
+end
 
 
 AddSimPostInit(function()
@@ -220,6 +227,20 @@ AddSimPostInit(function()
         AddWaveset("Reflection",3,Reflection_icon,Reflection_exp,nil,3.5,"hallowedforge")
 
         RF_DATA.wavesets.Reflection.must_map = "chapter1_cave"
+    end
+
+    if _G.TheWorld then
+        _G.TheWorld:ListenForEvent("ms_playerspawn", function(world, inst)
+            print(tostring(inst) .. " spawn")
+            RefreshHud()
+        end)
+
+        _G.TheWorld:ListenForEvent("ms_playerdespawn", function(world, inst)
+            print(tostring(inst) .. " despawn")
+            RefreshHud()
+        end)
+    else
+        print("[mod] TheWorld is nil in AddSimPostInit")
     end
 end)
 

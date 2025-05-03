@@ -61,18 +61,8 @@ local TeamHUD = Class(Widget, function(self, owner)
     end
 
     self:SetTeammates(_G.AllPlayers)
-    self:StartWatchingPlayers()
     self:StartUpdating()
 end)
-
-function TeamHUD:UpdateTeamHealthBars()
-    for teammate, healthbar in pairs(self.team_health) do
-        if teammate and teammate.components.health then
-            local health = teammate.components.health:GetPercent()
-            healthbar:SetPercent(health)  -- 체력 상태를 비율로 갱신
-        end
-    end
-end
 
 function TeamHUD:TryToggleHUD()
     print("change hide show")
@@ -109,26 +99,10 @@ function TeamHUD:RefreshTeammates()
     local teammates = {}
 
     for i, v in ipairs(_G.AllPlayers) do
-        if v ~= self.owner then
-            table.insert(teammates, v)
-        end
+        table.insert(teammates, v)
     end
 
     self:SetTeammates(teammates)
-end
-
-function TeamHUD:StartWatchingPlayers()
-    self.owner:ListenForEvent("playeractivated", function(_, player)
-        if player ~= self.owner then
-            self:RefreshTeammates()
-        end
-    end, _G.TheWorld)
-
-    self.owner:ListenForEvent("playerdeactivated", function(_, player)
-        if player ~= self.owner then
-            self:RefreshTeammates()
-        end
-    end,  _G.TheWorld)
 end
 
 function TeamHUD:OnUpdate(dt)
@@ -140,13 +114,6 @@ function TeamHUD:OnUpdate(dt)
         end
     else
         self.root:StopFollowMouse()
-    end
-
-    for _, hb in ipairs(self.healthbars) do
-        if hb.player and hb.player.components and hb.player.components.health then
-            local health_percent = hb.player.components.health:GetPercent()
-            hb.bar:SetPercent(health_percent)
-        end
     end
 end
 

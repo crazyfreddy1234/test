@@ -552,6 +552,24 @@ AddClassPostConstruct("widgets/statusdisplays_lavaarena", function(self)
     self.teamhud:Show()
 end)
 
+
+
+local function SetHealthNet(inst)
+    if inst.net_health_percent then
+        local percent = inst.components.health:GetPercent()
+        inst.net_health_percent:set(percent)
+    end
+end
+
+
+local function OnHealthDelta(inst, data)
+    if not _G.TheWorld.ismastersim then
+        return
+    end
+
+    SetHealthNet(inst)            --체력변화용
+end
+
 AddPlayerPostInit(function(inst)
     inst.MobsPlayersAlpha = _G.net_float(inst.GUID, "MobsPlayersAlpha")
     inst.MobsPlayersShadowEnable = _G.net_bool(inst.GUID, "MobsPlayersShadowEnable")
@@ -579,32 +597,21 @@ AddPlayerPostInit(function(inst)
 
 -----------------------------------------------------------------------------------------------------------------------------
 
-    inst.net_health_percent = net_float(inst.GUID, "playerhud.net_health_percent", "healthdirty")
-
-    local function OnHealthDelta(inst, data)
-        if inst.net_health_percent then
-            local percent = inst.components.health:GetPercent()
-            inst.net_health_percent:set(percent)
-        end
-    end
-
-    inst:ListenForEvent("healthdelta", OnHealthDelta)
-
+    inst.net_health_percent = _G.net_float(inst.GUID, "playerhud.net_health_percent", "healthdirty")
+    inst.net_health_percent:set(1)
     
 
-
-
-
+    if _G.TheWorld.ismastersim then
+        inst:ListenForEvent("healthdelta", OnHealthDelta)
+        inst:DoTaskInTime(0,function(inst)
+            SetHealthNet(inst)                --(본인)재접용
+        end)
+    end
 
     if not _G.TheNet:IsDedicated() then
         inst:DoTaskInTime(0, function()
             if inst.HUD then
                 inst.HUD.teammatehud = inst.HUD:AddChild(require("widgets/teamhud")(inst))
-                inst:DoPeriodicTask(0, function()
-                    if inst.HUD and inst.HUD.teammatehud then
-                        inst.HUD.teammatehud:OnUpdate()
-                    end
-                end)
             end
         end)
     end
@@ -684,29 +691,32 @@ CH1_CAVE.is_dungeon = true
 CH1_CAVE.must_waveset = "Reflection"
 
 
+local function FindPlayerByUserID(userid)
+    for i, player in ipairs(_G.AllPlayers) do
+        if player.userid == userid then
+            return player
+        end
+    end
+    print("[INFERNAL] FindPlayerByUserID : no player")
+    return nil
+end
 
+AddModRPCHandler("Infernal_Forge_RPC", "item_click", function(user, target_userid)
+    local target = FindPlayerByUserID(target_userid)
+    local item = user.components.inventory and user.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
 
-
-
-
-
-ModRPCName("Infernal_Forge_RPC", "item_click")
-ModRPCName("Infernal_Forge_RPC", "item_right_click")
-
-AddModRPCHandler("Infernal_Forge_RPC", "item_click", function(user, target_guid)
-    local target = Ents[target_guid]
-    local item = user.components.inventory and user.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
-
-    if item and item.components.infernal_weaponskill then
+    if target and item and item.components.infernal_weaponskill then
         item.components.infernal_weaponskill:Cast_LClick(item, user, target)
+        print(user:GetDisplayName() .. " healed " .. target:GetDisplayName())
     end
 end)
 
-AddModRPCHandler("Infernal_Forge_RPC", "item_right_click", function(user, target_guid)
-    local target = Ents[target_guid]
-    local item = user.components.inventory and user.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+AddModRPCHandler("Infernal_Forge_RPC", "item_right_click", function(user, target_userid)
+    local target = FindPlayerByUserID(target_userid)
+    local item = user.components.inventory and user.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
 
-    if item and item.components.infernal_weaponskill then
+    if target and item and item.components.infernal_weaponskill then
         item.components.infernal_weaponskill:Cast_RClick(item, user, target)
+        print(user:GetDisplayName() .. " healed " .. target:GetDisplayName())
     end
 end)

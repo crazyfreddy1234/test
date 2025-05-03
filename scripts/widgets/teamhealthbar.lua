@@ -20,7 +20,7 @@ local TeamHealthBar = Class(Widget, function(self, target_player, owner)
     self.hp_fill:SetPosition(0, 0) -- 초기 위치
 
     self.name = self:AddChild(Text(CHATFONT, 22))
-    self.name:SetString(self.owner:GetDisplayName())
+    self.name:SetString(self.target_player:GetDisplayName())
     self.name:SetPosition(0, 35)
     self.name:SetColour(1, 1, 1, 0.8)
 
@@ -28,9 +28,11 @@ local TeamHealthBar = Class(Widget, function(self, target_player, owner)
     self.status_text:SetPosition(0, 0)
     self.status_text:SetColour(1, 1, 1, 1)
 
-    self.owner:ListenForEvent("healthdirty", function()
+    self:SetPercent(1)
+
+    self.target_player:ListenForEvent("healthdirty", function()
         
-        local percent = self.owner.net_health_percent:value()
+        local percent = self.target_player.net_health_percent:value()
         self:SetPercent(percent)
 
     end, self.target_player)
@@ -44,17 +46,11 @@ function TeamHealthBar:OnControl(control, down)
     if down then
         if control == CONTROL_ACCEPT then
             print("[TeamHealthBar] 완쪽 클릭됨!")
-
-            SendModRPCToServer(MOD_RPC.Infernal_Forge_RPC.item_click, target_player.GUID)
-
-            -- 여기에 왼쪽 클릭 시 할 행동 추가
+            SendModRPCToServer(GetModRPC("Infernal_Forge_RPC", "item_click"), self.target_player.userid)
             return true
         elseif control == CONTROL_SECONDARY then
             print("[TeamHealthBar] 오른쪽 클릭됨!")
-            
-            SendModRPCToServer(MOD_RPC.Infernal_Forge_RPC.item_right_click, target_player.GUID)
-
-
+            SendModRPCToServer(GetModRPC("Infernal_Forge_RPC", "item_right_click"), self.target_player.userid)
             return true
         end
     end
