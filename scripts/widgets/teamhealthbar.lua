@@ -2,6 +2,7 @@ local Widget = require "widgets/widget"
 local Text = require "widgets/text"
 local Image = require "widgets/image"
 
+
 local TeamHealthBar = Class(Widget, function(self, target_player, owner)
     Widget._ctor(self, "TeamHealthBar")
 
@@ -30,10 +31,22 @@ local TeamHealthBar = Class(Widget, function(self, target_player, owner)
 
     self:SetPercent(1)
 
+
+
+
+    local function HealthNetChange(inst)  
+        local percent = inst.net_health_percent:value()
+        self:SetPercent(percent)
+    end
+    
+
+    if self.target_player.net_health_percent and self.target_player.net_health_percent:value() ~= 1 then
+        HealthNetChange(self.target_player)
+    end
+
     self.target_player:ListenForEvent("healthdirty", function()
         
-        local percent = self.target_player.net_health_percent:value()
-        self:SetPercent(percent)
+        HealthNetChange(self.target_player)
 
     end, self.target_player)
 end)
