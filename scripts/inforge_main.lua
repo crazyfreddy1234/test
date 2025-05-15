@@ -600,7 +600,6 @@ AddPlayerPostInit(function(inst)
     inst.net_health_percent = _G.net_float(inst.GUID, "playerhud.net_health_percent", "healthdirty")
     inst.net_health_percent:set(1)
     
-
     if _G.TheWorld.ismastersim then
         inst:ListenForEvent("healthdelta", OnHealthDelta)
         inst:DoTaskInTime(0,function(inst)
@@ -615,6 +614,52 @@ AddPlayerPostInit(function(inst)
             end
         end)
     end
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+    local function RemoveAllTypeTag(player)
+        local types = {"TANK","HEALER","MDPS","RDPS"}
+
+        for i,v in pairs(types) do
+            if player:HasTag(v) then
+                player:RemoveTag(v)
+            end
+        end
+    end
+
+    local function CheckWeaponType(player, item)
+        local types = {"TANK","HEALER","MDPS","RDPS"}
+        local isType = false
+
+        for i,v in pairs(types) do
+            if item:HasTag(v) then
+                player:AddTag(v)
+                isType = true
+            end
+        end
+
+        if isType ~= true then
+            player:AddTag("RDPS")
+        end
+    end
+
+    local function OnEquip(inst, data)
+        
+        RemoveAllTypeTag(inst)
+
+        if data ~= nil and data.item ~= nil then
+            local item = data.item
+
+            CheckWeaponType(inst, item)
+        else
+            inst:AddTag("RDPS")
+        end
+    end
+
+    inst:ListenForEvent("equip",OnEquip)
+
 end)
 
 AddModRPCHandler("Infernal_Forge_RPC", "UsePower", UseOneKey)
@@ -705,9 +750,10 @@ AddModRPCHandler("Infernal_Forge_RPC", "item_click", function(user, target_useri
     local target = FindPlayerByUserID(target_userid)
     local item = user.components.inventory and user.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
 
+    _G.INFORGE_COMMON_FNS.FindTargetsPriority(user, 10, 1, 1, 2, 3, 10)
+
     if target and item and item.components.infernal_weaponskill then
         item.components.infernal_weaponskill:Cast_LClick(item, user, target)
-        print(user:GetDisplayName() .. " healed " .. target:GetDisplayName())
     end
 end)
 
@@ -717,6 +763,65 @@ AddModRPCHandler("Infernal_Forge_RPC", "item_right_click", function(user, target
 
     if target and item and item.components.infernal_weaponskill then
         item.components.infernal_weaponskill:Cast_RClick(item, user, target)
-        print(user:GetDisplayName() .. " healed " .. target:GetDisplayName())
     end
 end)
+
+
+
+
+AddComponentPostInit("rechargeable", function(self)
+    if not _G.TheWorld.ismastersim or self.pickup_cooldown == nil then return end
+
+    print("[INFORGE] " .. self.pickup_cooldown)
+
+	-- ✅ 스택 상태 초기화
+	self.max_stacks = 2
+	self.current_stacks = self.max_stacks
+
+	-- ✅ 스택 기반 사용 함수
+	function self:UseCharge()
+		if self.current_stacks <= 0 then
+			return false
+		end
+
+		self.current_stacks = self.current_stacks - 1
+		self:StartRecharge() -- 기존 쿨타임 사용
+		self:UpdateStackHUD()
+		return true
+	end
+
+	-- ✅ 기존 쿨다운 종료 후 스택 복원
+	local _FinishRecharge = self.FinishRecharge
+	function self:FinishRecharge(...)
+		if _FinishRecharge then
+			_FinishRecharge(self, ...)
+		end
+
+		self.current_stacks = math.min(self.current_stacks + 1, self.max_stacks)
+		self:UpdateStackHUD()
+	end
+
+	-- ✅ 상태 확인 함수 덮어쓰기
+	local _IsReady = self.IsReady
+	function self:IsReady()
+		return self.current_stacks > 0 or self.ignore_ready or self.charge_count > 0
+	end
+
+	-- ✅ HUD 갱신 함수
+	function self:UpdateStackHUD()
+		local percent = self.current_stacks / self.max_stacks
+		self.inst:PushEvent("rechargechange", { percent = percent, overtime = false })
+
+		if self.inst.components.aoetargeting then
+			self.inst.components.aoetargeting:SetEnabled(self.current_stacks > 0)
+		end
+	end
+
+	-- ✅ 디버그
+	local _GetDebugString = self.GetDebugString
+	function self:GetDebugString()
+		local base = _GetDebugString and _GetDebugString(self) or ""
+		return string.format("%s | stacks: %d/%d", base, self.current_stacks, self.max_stacks)
+	end
+end)
+

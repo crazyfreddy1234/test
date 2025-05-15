@@ -117,6 +117,13 @@ AddPrefabPostInit("forgedarts", function(inst)
             return name .. (("\n+" .. tostring(randomdamage) .. " Damage" .. "\nPoison Attack Every 20 Hit") or "")
         end
     end
+
+
+
+
+
+
+    inst.components.rechargeable.max_stacks = 2
 end)
 
 AddPrefabPostInit("moltendarts", function(inst)
@@ -349,3 +356,35 @@ AddPrefabPostInit("grotto_waterfall_small2", function(inst)
         inst.AnimState:SetLightOverride(0)
     end
 end)
+
+
+
+
+local TANK_ITEM   = {"blacksmithsedge","forginghammer","riledlucy","teleport_staff"}
+local HEALER_ITEM = {"pocketwatch_reforged","livingstaff","spice_bomb","inforge_candle_staff","petrifyingtome","bacontome"}
+local MELLE_ITEM  = {"gauntlet","forge_trident","pithpike","spiralspear","lavaarena_spatula","firebomb"}
+local RANGE_ITEM  = {"forgedarts","moltendarts","infernalstaff","portal_staff","forge_slingshot","lavaarena_seeddart","lavaarena_seeddart2"}
+
+for i,v in pairs(TANK_ITEM) do
+    AddPrefabPostInit(v, function(inst)
+        inst:AddTag("TANK")
+    end)
+end
+
+for i,v in pairs(HEALER_ITEM) do
+    AddPrefabPostInit(v, function(inst)
+        inst:AddTag("HEALER")
+    end)
+end
+
+for i,v in pairs(MELLE_ITEM) do
+    AddPrefabPostInit(v, function(inst)
+        inst:AddTag("MDPS")
+    end)
+end
+
+for i,v in pairs(RANGE_ITEM) do
+    AddPrefabPostInit(v, function(inst)
+        inst:AddTag("RDPS")
+    end)
+end

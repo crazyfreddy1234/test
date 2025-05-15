@@ -32,7 +32,7 @@ end
 
 local function FindAllPlayer(inst, radius)
     local pos = inst:GetPosition()
-    local ents = _G.TheSim:FindEntities(pos.x, 0, pos.z, radius or 5,{"player", "companion", "ally"}, {"notarget", "INLIMBO", "playerghost"})
+    local ents = _G.TheSim:FindEntities(pos.x, 0, pos.z, radius or 5,{"player"}, {"notarget", "INLIMBO", "playerghost"})
 
     if ents ~= nil and #ents > 0 then
         return ents
@@ -62,9 +62,11 @@ local function FindTargets_WeaponType(inst, radius, weapontype)
     end
 end
 
-local function R_FindTargets(inst,radius)
+local function R_FindTargets(inst, radius)
     local pos = inst:GetPosition()
-    local ents = _G.TheSim:FindEntities(pos.x, 0, pos.z, radius or 5,{"player", "companion", "ally", "RDPS"}, {"notarget", "INLIMBO", "playerghost","already_target"})
+    local ents = _G.TheSim:FindEntities(pos.x, 0, pos.z, radius or 5,{"player", "RDPS"}, {"notarget", "INLIMBO", "playerghost","already_target"})
+
+    print("R activate , " .. #ents)
 
     if ents ~= nil and #ents > 0 then
         return ents
@@ -73,9 +75,9 @@ local function R_FindTargets(inst,radius)
     end
 end
 
-local function M_FindTargets(inst,radius)
+local function M_FindTargets(inst, radius)
     local pos = inst:GetPosition()
-    local ents = _G.TheSim:FindEntities(pos.x, 0, pos.z, radius or 5,{"player", "companion", "ally", "MDPS"}, {"notarget", "INLIMBO", "playerghost","already_target"})
+    local ents = _G.TheSim:FindEntities(pos.x, 0, pos.z, radius or 5,{"player", "MDPS"}, {"notarget", "INLIMBO", "playerghost","already_target"})
 
     if ents ~= nil and #ents > 0 then
         return ents
@@ -84,9 +86,9 @@ local function M_FindTargets(inst,radius)
     end
 end
 
-local function H_FindTargets(inst,radius)
+local function H_FindTargets(inst, radius)
     local pos = inst:GetPosition()
-    local ents = _G.TheSim:FindEntities(pos.x, 0, pos.z, radius or 5,{"player", "companion", "ally", "HEALER"}, {"notarget", "INLIMBO", "playerghost","already_target"})
+    local ents = _G.TheSim:FindEntities(pos.x, 0, pos.z, radius or 5,{"player", "HEALER"}, {"notarget", "INLIMBO", "playerghost","already_target"})
 
     if ents ~= nil and #ents > 0 then
         return ents
@@ -97,7 +99,7 @@ end
 
 local function T_FindTargets(inst, radius)
     local pos = inst:GetPosition()
-    local ents = _G.TheSim:FindEntities(pos.x, 0, pos.z, radius or 5,{"player", "companion", "ally", "TANK"}, {"notarget", "INLIMBO", "playerghost","already_target"})
+    local ents = _G.TheSim:FindEntities(pos.x, 0, pos.z, radius or 5,{"player", "TANK"}, {"notarget", "INLIMBO", "playerghost","already_target"})
 
     if ents ~= nil and #ents > 0 then
         return ents
@@ -108,6 +110,13 @@ end
 
 local function FindTargetsPriority(inst, radius, R_PRIORITY, M_PRIORITY, H_PRIORITY, T_PRIORITY, target_num)
     if target_num <= 0 then return end
+
+    local find_target_funcs = {
+        R = R_FindTargets,
+        M = M_FindTargets,
+        H = H_FindTargets,
+        T = T_FindTargets,
+    }
     
     local target_priority = {
         R = R_PRIORITY,
@@ -116,65 +125,89 @@ local function FindTargetsPriority(inst, radius, R_PRIORITY, M_PRIORITY, H_PRIOR
         T = T_PRIORITY,
     }
 
-    local limits = {
-        R = 3,
-        M = 2,
-        H = 2,
-        T = 2,
+    local targets_count = {
+        R = 0,
+        M = 0,
+        H = 0,
+        T = 0,
     }
 
     for i, v in ipairs(target_priority) do
         if v == nil then
             table.remove(target_priority, i)
+            table.remove(targets_count, i)
         else
-            limits[v] = FindTargetsRDPS(s)
+            local find_func = find_target_funcs[i]
+
+            if find_func then
+                local targets = find_func(inst, radius)
+                targets_count[i] = targets and #targets or 0
+            else
+                targets_count[i] = 0
+            end
         end
     end
     
     local total_needed = target_num
     
-    -- 결과 저장용
     local result = {}
     
-    -- 1. 우선순위 테이블을 배열로 변환
     local priority_list = {}
     for k, priority in pairs(target_priority) do
         table.insert(priority_list, { key = k, priority = priority })
     end
     
-    -- 2. 오름차순 정렬 (작은 수가 더 높은 우선순위)
     table.sort(priority_list, function(a, b)
         return a.priority < b.priority
     end)
     
-    -- 3. 정렬된 우선순위대로 인원을 뽑기
     local remaining = total_needed
     
     for _, entry in ipairs(priority_list) do
         local key = entry.key
-        local max_count = limits[key] or 0
+        local max_count = targets_count[key] or 0
     
         if remaining <= 0 then break end
     
         local to_add = math.min(max_count, remaining)
     
-        -- to_add 만큼 키를 추가
         for i = 1, to_add do
             table.insert(result, key)
         end
     
         remaining = remaining - to_add
     end
+    
 
-    print("=== target_priority ===")
-    for k, v in pairs(target_priority) do
-        print(k, v)
+
+    local result_players = {}
+
+    print("\n=== Selected Result ===")
+    for i, weapon_type in ipairs(result) do
+        print(i, weapon_type)
+
+        local type_FindTargets = find_target_funcs[weapon_type]
+
+        if type_FindTargets then
+            players = type_FindTargets(inst, radius) 
+
+            if players and #players > 0 then
+                local random_index = math.random(#players)
+                local chosen = players[random_index]
+                print("선택된 대상:", chosen)
+                
+                table.insert(result_players, chosen)
+            else
+                print("타겟 없음")
+            end
+        end
+    end
+
+    for i,v in pairs(result_players) do
+        print(v)
     end
     
-    print("\n=== Selected Result ===")
-    for i, v in ipairs(result) do
-        print(i, v)
-    end
+    return result_players
 end
 
 return {
@@ -184,4 +217,10 @@ return {
     StopTurnOnPowerWhoJoinServer = StopTurnOnPowerWhoJoinServer,
     IsDungeon = IsDungeon,
     FindAllPlayer = FindAllPlayer,
+    FindTargets_WeaponType = FindTargets_WeaponType,
+    R_FindTargets = R_FindTargets,
+    M_FindTargets = M_FindTargets,
+    H_FindTargets = H_FindTargets,
+    T_FindTargets = T_FindTargets,
+    FindTargetsPriority = FindTargetsPriority,
 }

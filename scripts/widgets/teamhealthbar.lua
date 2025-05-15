@@ -31,7 +31,10 @@ local TeamHealthBar = Class(Widget, function(self, target_player, owner)
 
     self:SetPercent(1)
 
-
+    if self.target_player.net_health_percent:value() ~= 1 then
+        local percent = self.target_player.net_health_percent:value()
+        self:SetPercent(percent)
+    end
 
 
     local function HealthNetChange(inst)  
