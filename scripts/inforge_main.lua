@@ -776,52 +776,175 @@ AddComponentPostInit("rechargeable", function(self)
 
 	-- ✅ 스택 상태 초기화
 	self.max_stacks = 2
-	self.current_stacks = self.max_stacks
+    self.current_stacks = self.max_stacks
+    self.recharge_queue = {}
+    self.inforge_owner = nil
 
-	-- ✅ 스택 기반 사용 함수
+
+
+    local Old_StartRecharge = self.StartRecharge
+    function self:StartRecharge()
+        if self.max_stacks ~= nil and self.max_stacks > 1 then
+
+
+            if not (self.isready or self.pickup) and self.charge_count > 0 then
+                local charge_data = table.remove(self.charge_priority, 1)
+                self:RemoveCooldownCharge(charge_data.source)
+                self.owner:PushEvent("charge_consumed", {item = self.inst, source = charge_data.source})
+            end
+
+            if self.current_stacks <= 0 then
+                self.isready = false
+            end
+
+            if self.inst.components.aoetargeting and self.current_stacks <= 0 then
+                self.inst.components.aoetargeting:SetEnabled(false)
+            end
+
+
+            if self.updatetask ~= nil then
+                return
+            end
+
+            self.rechargetime = self.pickup and self.pickup_cooldown or self.maxrechargetime
+            self.recharge = 0
+            self.amount_charged = 0
+
+            if self.is_timer then
+                self:RecalculateRate()
+
+                self.inst:DoTaskInTime(0, function()
+
+                    self.inst.replica.inventoryitem:SetChargeTime(self:GetRechargeTime())
+                    self.inst:PushEvent("rechargechange", { percent = self.recharge and self.recharge / 180, overtime = false })
+                    _G.RemoveTask(self.updatetask)
+                    self.updatetask = self.inst:DoPeriodicTask(_G.FRAMES, function() self:Update() end)
+
+                end)
+
+            else
+                self.inst:PushEvent("forcerechargechange", { percent = 0, overtime = true })
+            end
+
+        else
+
+            Old_StartRecharge(self)
+
+        end
+    end
+
 	function self:UseCharge()
-		if self.current_stacks <= 0 then
-			return false
-		end
+        if self.current_stacks <= 0 then return false end
 
-		self.current_stacks = self.current_stacks - 1
-		self:StartRecharge() -- 기존 쿨타임 사용
-		self:UpdateStackHUD()
-		return true
-	end
+        self.current_stacks = math.max(self.current_stacks - 1, 0)
 
-	-- ✅ 기존 쿨다운 종료 후 스택 복원
-	local _FinishRecharge = self.FinishRecharge
-	function self:FinishRecharge(...)
-		if _FinishRecharge then
-			_FinishRecharge(self, ...)
-		end
+        print("[INFORGE] USECHARGE " .. self.current_stacks)
 
-		self.current_stacks = math.min(self.current_stacks + 1, self.max_stacks)
-		self:UpdateStackHUD()
-	end
+        if self.current_stacks <= 0 then
+            self.isready = false
+        end
 
-	-- ✅ 상태 확인 함수 덮어쓰기
-	local _IsReady = self.IsReady
-	function self:IsReady()
-		return self.current_stacks > 0 or self.ignore_ready or self.charge_count > 0
-	end
+        if self.inst.components.aoetargeting and self.current_stacks <= 0 then
+            self.inst.components.aoetargeting:SetEnabled(false)
+        end
 
-	-- ✅ HUD 갱신 함수
-	function self:UpdateStackHUD()
-		local percent = self.current_stacks / self.max_stacks
-		self.inst:PushEvent("rechargechange", { percent = percent, overtime = false })
+        table.insert(self.recharge_queue, true)
 
-		if self.inst.components.aoetargeting then
-			self.inst.components.aoetargeting:SetEnabled(self.current_stacks > 0)
-		end
-	end
+        self:UpdateHUD()
+        return true
+    end
 
-	-- ✅ 디버그
-	local _GetDebugString = self.GetDebugString
-	function self:GetDebugString()
-		local base = _GetDebugString and _GetDebugString(self) or ""
-		return string.format("%s | stacks: %d/%d", base, self.current_stacks, self.max_stacks)
-	end
+    -- ✅ 기존 FinishRecharge 후 다음 큐 시작
+    local _FinishRecharge = self.FinishRecharge
+    function self:FinishRecharge(...)
+        if _FinishRecharge then _FinishRecharge(self, ...) end
+
+        self.current_stacks = math.min(self.current_stacks + 1, self.max_stacks)
+        table.remove(self.recharge_queue, 1)
+
+        if #self.recharge_queue > 0 then
+            self:StartRecharge() -- 다음 큐 실행
+        end
+
+        self:UpdateHUD()
+    end
+
+    function self:UpdateHUD()
+        self.inst:PushEvent("rechargechange", { percent = self.recharge and self.recharge / 180, overtime = false })
+    end
+
+    function self:SetMaxStack(stack)
+        self.max_stacks = stack
+    end
+
+    function self:GetMaxStack() 
+        return self.max_stacks or 1
+    end
+
+
+    local function UseChargeFn(inst, data)
+        self:UseCharge()
+    end
+
+
+
+
+    self.inst:ListenForEvent("equipped", function(inst, data)
+
+        self.inforge_owner = data.owner
+
+        self.inforge_owner:ListenForEvent("spell_complete",UseChargeFn)
+    end)
+
+    self.inst:ListenForEvent("unequipped", function(inst, data)
+        self.inforge_owner:RemoveEventCallback("spell_complete", UseChargeFn)
+        self.inforge_owner = nil
+    end)
 end)
+
+
+
+local function AddStackNetvar(inst)
+    if _G.TheNet:IsDedicated() then return end
+
+    -- 클라이언트 전용 netvar
+    if inst._stack_count == nil then
+        inst._stack_count = _G.net_smallbyte(inst.GUID, "inf.stack", "inf.stackdirty")
+    end
+end
+
+AddPrefabPostInitAny(function(inst)
+    if inst.components and inst.components.rechargeable and inst.components.rechargeable.max_stacks then
+        print("[STACK HUD] Found rechargeable with max_stacks:", inst.components.rechargeable.max_stacks)
+
+        -- ✅ ❌ 문제 코드
+        -- if TheNet:IsDedicated() then return end
+        -- ↑ 이 조건 때문에 서버에서는 netvar가 만들어지지 않음
+
+        -- ✅ 🔧 고친 코드: 양쪽 다 선언
+        if inst._stack_count == nil then
+            inst._stack_count = _G.net_smallbyte(inst.GUID, "inf.stack", "inf.stackdirty")
+            print("[STACK HUD] net_smallbyte created!")
+        end
+
+        if _G.TheWorld.ismastersim then
+            inst:DoPeriodicTask(0.25, function()
+                if inst.components.rechargeable then
+                    local value = inst.components.rechargeable.current_stacks or 0
+                    inst._stack_count:set(value)
+                    print("[STACK HUD] Server set _stack_count:", value)
+                end
+            end)
+        end
+    end
+end)
+
+
+
+local StackDisplay = require("widgets/stackdisplay")
+
+AddClassPostConstruct("screens/playerhud", function(self)
+    self.stackdisplay = self.overlayroot:AddChild(StackDisplay(_G.ThePlayer))
+end)
+
 

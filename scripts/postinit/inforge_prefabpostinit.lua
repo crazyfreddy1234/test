@@ -117,13 +117,6 @@ AddPrefabPostInit("forgedarts", function(inst)
             return name .. (("\n+" .. tostring(randomdamage) .. " Damage" .. "\nPoison Attack Every 20 Hit") or "")
         end
     end
-
-
-
-
-
-
-    inst.components.rechargeable.max_stacks = 2
 end)
 
 AddPrefabPostInit("moltendarts", function(inst)
