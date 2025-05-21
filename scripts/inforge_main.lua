@@ -174,7 +174,9 @@ AddComponentPostInit("rechargeable",function(self)
             end
             self.isready = false
             if self.inst.components.aoetargeting and self.charge_count <= 0 then
-                self.inst.components.aoetargeting:SetEnabled(false)
+                if self.inst:HasTag("targetingready") then
+                    self.inst.components.aoetargeting:SetEnabled(false)
+                end
             end
             self.rechargetime = self.pickup and 6 or self.maxrechargetime
             self.recharge = 0
@@ -615,8 +617,6 @@ AddPlayerPostInit(function(inst)
         end)
     end
 
-
-
 -----------------------------------------------------------------------------------------------------------------------------
 
     local function RemoveAllTypeTag(player)
@@ -770,7 +770,7 @@ end)
 
 
 AddComponentPostInit("rechargeable", function(self)
-    if not _G.TheWorld.ismastersim or self.pickup_cooldown == nil then return end
+    if self.pickup_cooldown == nil or not _G.TheWorld.ismastersim then return end
 
     print("[INFORGE] " .. self.pickup_cooldown)
 
@@ -798,7 +798,9 @@ AddComponentPostInit("rechargeable", function(self)
             end
 
             if self.inst.components.aoetargeting and self.current_stacks <= 0 then
-                self.inst.components.aoetargeting:SetEnabled(false)
+                if self.inst:HasTag("targetingready") then
+                    self.inst.components.aoetargeting:SetEnabled(false)
+                end
             end
 
 
@@ -845,7 +847,9 @@ AddComponentPostInit("rechargeable", function(self)
         end
 
         if self.inst.components.aoetargeting and self.current_stacks <= 0 then
-            self.inst.components.aoetargeting:SetEnabled(false)
+            if self.inst:HasTag("targetingready") then
+                self.inst.components.aoetargeting:SetEnabled(false)
+            end
         end
 
         table.insert(self.recharge_queue, true)
@@ -915,24 +919,14 @@ end
 
 AddPrefabPostInitAny(function(inst)
     if inst.components and inst.components.rechargeable and inst.components.rechargeable.max_stacks then
-        print("[STACK HUD] Found rechargeable with max_stacks:", inst.components.rechargeable.max_stacks)
-
-        -- ✅ ❌ 문제 코드
-        -- if TheNet:IsDedicated() then return end
-        -- ↑ 이 조건 때문에 서버에서는 netvar가 만들어지지 않음
-
-        -- ✅ 🔧 고친 코드: 양쪽 다 선언
         if inst._stack_count == nil then
             inst._stack_count = _G.net_smallbyte(inst.GUID, "inf.stack", "inf.stackdirty")
-            print("[STACK HUD] net_smallbyte created!")
         end
 
         if _G.TheWorld.ismastersim then
-            inst:DoPeriodicTask(0.25, function()
-                if inst.components.rechargeable then
-                    local value = inst.components.rechargeable.current_stacks or 0
-                    inst._stack_count:set(value)
-                    print("[STACK HUD] Server set _stack_count:", value)
+            inst:DoPeriodicTask(0, function()
+                if inst._stack_count and inst.components.rechargeable then
+                    inst._stack_count:set(inst.components.rechargeable.current_stacks or 0)
                 end
             end)
         end
@@ -940,11 +934,19 @@ AddPrefabPostInitAny(function(inst)
 end)
 
 
-
 local StackDisplay = require("widgets/stackdisplay")
 
-AddClassPostConstruct("screens/playerhud", function(self)
-    self.stackdisplay = self.overlayroot:AddChild(StackDisplay(_G.ThePlayer))
+AddClassPostConstruct("widgets/itemtile", function(self)
+    self.inst:DoTaskInTime(0, function()
+        if not _G.ThePlayer or not _G.ThePlayer.components.inventory then return end
+
+        local equipped = _G.ThePlayer.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
+
+        if self.item ~= equipped then
+            return
+        end
+
+        self.stackdisplay = self:AddChild(StackDisplay(_G.ThePlayer))
+        self.stackdisplay:MoveToFront()
+    end)
 end)
-
-
