@@ -770,7 +770,7 @@ end)
 
 
 AddComponentPostInit("rechargeable", function(self)
-    if self.pickup_cooldown == nil or not _G.TheWorld.ismastersim then return end
+    if self.pickup_cooldown == nil then return end
 
     print("[INFORGE] " .. self.pickup_cooldown)
 
@@ -786,47 +786,46 @@ AddComponentPostInit("rechargeable", function(self)
     function self:StartRecharge()
         if self.max_stacks ~= nil and self.max_stacks > 1 then
 
+            self.inst:DoTaskInTime(0,function()
+                if not (self.isready or self.pickup) and self.charge_count > 0 then
+                    local charge_data = table.remove(self.charge_priority, 1)
+                    self:RemoveCooldownCharge(charge_data.source)
+                    self.owner:PushEvent("charge_consumed", {item = self.inst, source = charge_data.source})
+                end
 
-            if not (self.isready or self.pickup) and self.charge_count > 0 then
-                local charge_data = table.remove(self.charge_priority, 1)
-                self:RemoveCooldownCharge(charge_data.source)
-                self.owner:PushEvent("charge_consumed", {item = self.inst, source = charge_data.source})
-            end
+                if self.current_stacks <= 0 then
+                    self.isready = false
+                end
 
-            if self.current_stacks <= 0 then
-                self.isready = false
-            end
-
-            if self.inst.components.aoetargeting and self.current_stacks <= 0 then
-                if self.inst:HasTag("targetingready") then
+                if self.inst.components.aoetargeting and self.current_stacks <= 0 then
                     self.inst.components.aoetargeting:SetEnabled(false)
                 end
-            end
 
 
-            if self.updatetask ~= nil then
-                return
-            end
+                if self.updatetask ~= nil then
+                    return
+                end
 
-            self.rechargetime = self.pickup and self.pickup_cooldown or self.maxrechargetime
-            self.recharge = 0
-            self.amount_charged = 0
+                self.rechargetime = self.pickup and self.pickup_cooldown or self.maxrechargetime
+                self.recharge = 0
+                self.amount_charged = 0
 
-            if self.is_timer then
-                self:RecalculateRate()
+                if self.is_timer then
+                    self:RecalculateRate()
 
-                self.inst:DoTaskInTime(0, function()
+                    self.inst:DoTaskInTime(0, function()
 
-                    self.inst.replica.inventoryitem:SetChargeTime(self:GetRechargeTime())
-                    self.inst:PushEvent("rechargechange", { percent = self.recharge and self.recharge / 180, overtime = false })
-                    _G.RemoveTask(self.updatetask)
-                    self.updatetask = self.inst:DoPeriodicTask(_G.FRAMES, function() self:Update() end)
+                        self.inst.replica.inventoryitem:SetChargeTime(self:GetRechargeTime())
+                        self.inst:PushEvent("rechargechange", { percent = self.recharge and self.recharge / 180, overtime = false })
+                        _G.RemoveTask(self.updatetask)
+                        self.updatetask = self.inst:DoPeriodicTask(_G.FRAMES, function() self:Update() end)
 
-                end)
+                    end)
 
-            else
-                self.inst:PushEvent("forcerechargechange", { percent = 0, overtime = true })
-            end
+                else
+                    self.inst:PushEvent("forcerechargechange", { percent = 0, overtime = true })
+                end
+            end)
 
         else
 
@@ -842,15 +841,17 @@ AddComponentPostInit("rechargeable", function(self)
 
         print("[INFORGE] USECHARGE " .. self.current_stacks)
 
+        --[[
+
         if self.current_stacks <= 0 then
             self.isready = false
         end
 
+        
         if self.inst.components.aoetargeting and self.current_stacks <= 0 then
-            if self.inst:HasTag("targetingready") then
-                self.inst.components.aoetargeting:SetEnabled(false)
-            end
+            self.inst.components.aoetargeting:SetEnabled(false)
         end
+        ]]--
 
         table.insert(self.recharge_queue, true)
 
@@ -938,9 +939,10 @@ local StackDisplay = require("widgets/stackdisplay")
 
 AddClassPostConstruct("widgets/itemtile", function(self)
     self.inst:DoTaskInTime(0, function()
-        if not _G.ThePlayer or not _G.ThePlayer.components.inventory then return end
+        if not _G.ThePlayer or not _G.ThePlayer.replica.inventory then return end
 
-        local equipped = _G.ThePlayer.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
+        -- ✅ 클라이언트에서는 replica.inventory 사용
+        local equipped = _G.ThePlayer.replica.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
 
         if self.item ~= equipped then
             return
@@ -950,3 +952,4 @@ AddClassPostConstruct("widgets/itemtile", function(self)
         self.stackdisplay:MoveToFront()
     end)
 end)
+
