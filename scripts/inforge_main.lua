@@ -45,95 +45,7 @@ end
 AddStategraphPostInit("swineclops_hard",AddSGSwineclopsHard)
 
 
-AddClassPostConstruct("widgets/game_settings_panel", function(self)
-    local _OldGetOptions = self.GetOptions
-    local _OldUpdateSetting = self.UpdateSetting
 
-    local function SetOrdinary()
-        local spinner = self.spinners.waveset.spinner
-        local wavesets = self:GetWavesets()
-        spinner:SetOptions(wavesets)
-        spinner:SetSelected(self.settings.current.waveset)
-    end
-
-    local function CheckException(self,category,name)  --only work by map and waveset    --TODO can check by anything?
-        local map_name          = self.settings.selected.map or self.settings.current.map
-        local map_data  = RF_DATA.maps[map_name]
-
-        local waveset_data = RF_DATA.wavesets[name]
-
-        if category == "wavesets" and name == "swineclops" 
-            or (map_data.is_dungeon == nil and waveset_data.must_map == nil) 
-            or (map_data.is_dungeon == true and waveset_data.must_map ~= nil and map_name == waveset_data.must_map) then
-
-            return true
-        else
-            return false
-        end
-    end
-    
-    self.GetOptions = function(self,category)
-        local options = {}
-        local strings = STRINGS.REFORGED[string.upper(category)]
-        for name,data in pairs(RF_DATA[category] or {}) do
-            local map_data = RF_DATA.maps[self.settings.selected.map or self.settings.current.map]
-            local difficulties_name = self.settings.selected.difficulty or self.settings.current.difficulty
-            if not (category == "wavesets" and (not _G.REFORGED_SETTINGS.other.enable_sandbox and name == "sandbox" or map_data and map_data.spawners < data.spawners)) 
-                and not (category == "wavesets" and name == "Ordinary" and (not _G.REFORGED_SETTINGS.other.enable_sandbox and name == "sandbox" or difficulties_name and difficulties_name == "extrahard")) 
-                and not (category == "wavesets" and name == "Extraordinary" and (not _G.REFORGED_SETTINGS.other.enable_sandbox and name == "sandbox" or difficulties_name and difficulties_name ~= "extrahard")) 
-                and CheckException(self,category,name) then
-
-                table.insert(options, {text = strings and (strings[name] and strings[name].name or strings[name]) or STRINGS.REFORGED.unknown, data = name, order_priority = data.order_priority or 999})
-            end
-        end
-        table.sort(options, function(a, b)
-            return a.order_priority < b.order_priority
-        end)
-        return options
-    end
-
-    self.UpdateSetting = function(self, setting, value)
-        local selected_waveset    = self.settings.selected.waveset    or self.settings.current.waveset
-        local selected_difficulty = self.settings.selected.difficulty or self.settings.current.difficulty
-        local selected_map        = self.settings.selected.map        or self.settings.current.map
-
-        local map_data  = RF_DATA.maps[selected_map]
-
-        if ((selected_waveset == "Ordinary" and selected_difficulty == "extrahard") or (selected_waveset == "Extraordinary" and selected_difficulty ~= "extrahard")) 
-            and self.isselected ~= true then
-
-            local spinner = self.spinners.waveset.spinner
-            local wavesets = self:GetWavesets()
-            self.isselected = true
-            spinner:SetOptions(wavesets)
-
-            if selected_waveset == "Ordinary" then
-                spinner:SetSelected("Extraordinary")
-                self.isselected = nil
-            elseif selected_waveset == "Extraordinary" then
-                spinner:SetSelected("Ordinary")
-                self.isselected = nil
-            end
-        end
-
-        --[[
-        if map_data and map_data.is_dungeon and (selected_waveset ~= map_data.must_waveset or selected_waveset ~= "swineclops") and self.isselected ~= true then
-            local spinner = self.spinners.waveset.spinner
-            local wavesets = self:GetWavesets()
-
-            self.isselected = true
-            spinner:SetOptions(wavesets)
-
-            spinner:SetSelected(map_data.must_waveset)
-            self.isselected = nil
-        end
-        ]]--
-
-        _OldUpdateSetting(self, setting, value)
-    end
-
-    SetOrdinary()
-end)
 
 AddComponentPostInit("rechargeable",function(self)
     local _oldGetRechargeTime = self.GetRechargeTime
@@ -529,33 +441,6 @@ local function EnablePowerOnServer(inst)
     end
 end
 
-local Badge         = require "widgets/badge"
-local PowerMeter    = require "widgets/test_widget"
-local SkillMeter    = require "widgets/skill_widget"
-local TeamHud       = require "widgets/skill_widget"
-
-AddClassPostConstruct("widgets/statusdisplays_lavaarena", function(self)
-	self.powerwidget = self:AddChild(PowerMeter(self.owner))
-	self.powerwidget:SetPosition(-80,-20,0)
-    
-    self.powerwidget.circleframe:Hide()
-    self.powerwidget.anim:Hide()
-    self.powerwidget.num:Hide()
-
-    self.skillwidget = self:AddChild(SkillMeter(self.owner))
-    self.skillwidget:SetPosition(-200,-20,0)
-    self.skillwidget.circleframe:Hide()
-    self.skillwidget.anim:Hide()
-    self.skillwidget.num:Hide()  
-
-
-    self.teamhud = self:AddChild(TeamHud(self.owner))
-    self.teamhud:SetPosition(-200,-20,0)
-    self.teamhud:Show()
-end)
-
-
-
 local function SetHealthNet(inst)
     if inst.net_health_percent then
         local percent = inst.components.health:GetPercent()
@@ -597,7 +482,7 @@ AddPlayerPostInit(function(inst)
     inst:ListenForEvent("player_portal_spawn", EnablePowerOnServer)
 
 
------------------------------------------------------------------------------------------------------------------------------
+    -----------------------------------------------------------------------------------------------------------------------------
 
     inst.net_health_percent = _G.net_float(inst.GUID, "playerhud.net_health_percent", "healthdirty")
     inst.net_health_percent:set(1)
@@ -617,7 +502,7 @@ AddPlayerPostInit(function(inst)
         end)
     end
 
------------------------------------------------------------------------------------------------------------------------------
+    -----------------------------------------------------------------------------------------------------------------------------
 
     local function RemoveAllTypeTag(player)
         local types = {"TANK","HEALER","MDPS","RDPS"}
@@ -645,6 +530,19 @@ AddPlayerPostInit(function(inst)
         end
     end
 
+
+
+
+    inst._stack_count = _G.net_smallbyte(inst.GUID, "inf.stack", "inf_stackdirty")
+    inst._Update_Stack = _G.net_bool(inst.GUID, "inf.updatestac", "inf_updatestackdirty")
+    inst._stack_count:set(0)
+
+    local function CheckFinishRecharge(inst, data)
+        if data.stack and data.owner then
+            data.owner._stack_count:set(data.stack)
+        end
+    end
+
     local function OnEquip(inst, data)
         
         RemoveAllTypeTag(inst)
@@ -656,10 +554,42 @@ AddPlayerPostInit(function(inst)
         else
             inst:AddTag("RDPS")
         end
+
+
+
+
+        if inst and inst.stackdisplay ~= nil then
+            inst.stackdisplay:UpdateText()
+        end
+    ----------------------------------------------------------------------
+
+        inst:DoTaskInTime(0,function()
+            if inst and inst:IsValid() and inst._stack_count ~= nil
+                and data ~= nil and data.item ~= nil 
+                and data.item.components.rechargeable ~= nil and data.item.components.rechargeable:GetMaxStack() >= 2 then
+
+                local current_stack = data.item.components.rechargeable:GetCurrentStack()
+
+                inst._stack_count:set(current_stack)
+
+                data.item:ListenForEvent("rechargechange", CheckFinishRecharge)
+            end
+        end)
     end
 
-    inst:ListenForEvent("equip",OnEquip)
 
+    local function OnUnequip(inst, data)
+        if data ~= nil and data.item ~= nil then
+            data.item:RemoveEventCallback("rechargechange", CheckFinishRecharge)
+
+            if inst and inst.stackdisplay ~= nil then
+                inst.stackdisplay:HideText()
+            end
+        end
+    end
+
+    inst:ListenForEvent("equip", OnEquip)
+    inst:ListenForEvent("unequip", OnUnequip)
 end)
 
 AddModRPCHandler("Infernal_Forge_RPC", "UsePower", UseOneKey)
@@ -768,9 +698,10 @@ end)
 
 
 
-
 AddComponentPostInit("rechargeable", function(self)
     if self.pickup_cooldown == nil then return end
+
+    self.inst:AddTag("multi_recharge")
 
     print("[INFORGE] " .. self.pickup_cooldown)
 
@@ -875,7 +806,7 @@ AddComponentPostInit("rechargeable", function(self)
     end
 
     function self:UpdateHUD()
-        self.inst:PushEvent("rechargechange", { percent = self.recharge and self.recharge / 180, overtime = false })
+        self.inst:PushEvent("rechargechange", { percent = self.recharge and self.recharge / 180, overtime = false, stack = self.current_stacks, owner = self.owner and self.owner or nil})
     end
 
     function self:SetMaxStack(stack)
@@ -884,6 +815,10 @@ AddComponentPostInit("rechargeable", function(self)
 
     function self:GetMaxStack() 
         return self.max_stacks or 1
+    end
+
+    function self:GetCurrentStack() 
+        return self.current_stacks or 1
     end
 
 
@@ -909,47 +844,37 @@ end)
 
 
 
-local function AddStackNetvar(inst)
-    if _G.TheNet:IsDedicated() then return end
-
-    -- 클라이언트 전용 netvar
-    if inst._stack_count == nil then
-        inst._stack_count = _G.net_smallbyte(inst.GUID, "inf.stack", "inf.stackdirty")
-    end
+--[[
+local function OnCustomKeyControl(inst)
+    local x, y = -30, -465
+    inst:DoPeriodicTask(0, function()
+        if inst.stackdisplay ~= nil then
+            if _G.TheInput:IsControlPressed(_G.CONTROL_MOVE_LEFT) then
+                x = x - 1
+                inst.stackdisplay:SetPosition(x,y)
+                print(x,y)
+            elseif _G.TheInput:IsControlPressed(_G.CONTROL_MOVE_RIGHT) then
+                x = x + 1
+                inst.stackdisplay:SetPosition(x,y)
+                print(x,y)
+            elseif _G.TheInput:IsControlPressed(_G.CONTROL_MOVE_DOWN) then
+                y = y - 1
+                inst.stackdisplay:SetPosition(x,y)
+                print(x,y)
+            elseif _G.TheInput:IsControlPressed(_G.CONTROL_MOVE_UP) then
+                y = y + 1
+                inst.stackdisplay:SetPosition(x,y)
+                print(x,y)
+            end
+        end
+    end)
 end
 
-AddPrefabPostInitAny(function(inst)
-    if inst.components and inst.components.rechargeable and inst.components.rechargeable.max_stacks then
-        if inst._stack_count == nil then
-            inst._stack_count = _G.net_smallbyte(inst.GUID, "inf.stack", "inf.stackdirty")
+AddPlayerPostInit(function(inst)
+    inst:DoTaskInTime(_G.FRAMES,function()
+        if inst then
+            OnCustomKeyControl(inst)
         end
-
-        if _G.TheWorld.ismastersim then
-            inst:DoPeriodicTask(0, function()
-                if inst._stack_count and inst.components.rechargeable then
-                    inst._stack_count:set(inst.components.rechargeable.current_stacks or 0)
-                end
-            end)
-        end
-    end
-end)
-
-
-local StackDisplay = require("widgets/stackdisplay")
-
-AddClassPostConstruct("widgets/itemtile", function(self)
-    self.inst:DoTaskInTime(0, function()
-        if not _G.ThePlayer or not _G.ThePlayer.replica.inventory then return end
-
-        -- ✅ 클라이언트에서는 replica.inventory 사용
-        local equipped = _G.ThePlayer.replica.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
-
-        if self.item ~= equipped then
-            return
-        end
-
-        self.stackdisplay = self:AddChild(StackDisplay(_G.ThePlayer))
-        self.stackdisplay:MoveToFront()
     end)
 end)
-
+]]--

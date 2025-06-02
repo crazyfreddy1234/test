@@ -18,11 +18,11 @@ modimport(gametype.."mathtest.lua")
 modimport(gametype.."discolights.lua")
 modimport(gametype.."discolightsrave.lua")
 modimport(gametype.."blossoms.lua")
-
 --------------functions--------------------
 modimport("scripts/inforge_main.lua")
 modimport("scripts/postinit/inforge_anyprefab.lua")
 modimport("scripts/postinit/inforge_prefabpostinit.lua")
+modimport("scripts/postinit/inforge_classpostinit.lua")
 --------------assets--------------------
 modimport("scripts/inforge_strings.lua")
 _G.TUNING.INFORGE         = require("inforge_tuning")

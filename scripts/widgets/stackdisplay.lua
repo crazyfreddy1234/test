@@ -2,30 +2,58 @@ local Widget = require("widgets/widget")
 local Text = require("widgets/text")
 local UIAnim = require("widgets/uianim")
 
-local StackDisplay = Class(Widget, function(self, owner)
+local StackDisplay = Class(Widget, function(self, owner, weapon)
     Widget._ctor(self, "StackDisplay")
+    self:MoveToFront()
+    self:SetPosition(-60, -10)    ------(-12,-474)-----
+
     self.owner = owner
+    self.temp_value = "?"
+    self.equip_weapon = weapon
 
-    self.stacktext = self:AddChild(Text(NUMBERFONT, 42))
-    --self.stacktext:SetHAnchor(ANCHOR_MIDDLE)
-    --self.stacktext:SetVAnchor(ANCHOR_BOTTOM)
-    self.stacktext:SetPosition(0, 0)
+    self.stacktext = self:AddChild(Text(NUMBERFONT, 45))
     self.stacktext:SetColour(1, 1, 1, 1)
-    self:Show()
 
-    self.inst:DoPeriodicTask(0, function() self:UpdateText() end)
+    if self.equip_weapon ~= nil then
+        self.owner:DoTaskInTime(_G.FRAMES, function()
+            self:UpdateText()
+        end)
+    end
+
+    -- 등록
+    self.owner._stackdirty = function(inst, data) self:UpdateText(inst, data) end
+
+    self.owner:ListenForEvent("inf_stackdirty", self.owner._stackdirty)
 end)
 
 function StackDisplay:UpdateText()
-    local item = self.owner.replica.inventory and self.owner.replica.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
 
-    if item and item._stack_count then
-        local count = item._stack_count:value()
+    local stack_num = self.owner._stack_count and self.owner._stack_count:value() or nil
 
-        -- 표시
-        self.stacktext:SetString(tostring(count))
-        self:Show()
+    print("[INFORGE] UPDATE TEXT", stack_num)
+
+    if stack_num ~= nil then
+        self:ShowText(stack_num)
+    else
+        self:HideText()
     end
+end
+
+function StackDisplay:ShowText(val)
+    print("[INFORGE] SHOW ACTIVATE")
+    self:Show()
+
+    if val ~= nil then
+        self.stacktext:SetString(val)
+    else
+        self.stacktext:SetString(self.temp_value)
+    end
+end
+
+function StackDisplay:HideText()
+    print("hide text")
+    self.stacktext:SetString("")
+    self:Hide()
 end
 
 return StackDisplay

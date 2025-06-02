@@ -83,11 +83,11 @@ STRINGS.UI.WXP_DETAILS.DISCOLIGHTSRAVE_WIN="Disco Rave Win"
 STRINGS.REFORGED.GAMETYPES.blossoms={name="Blooming Days",desc="Please don’t reminisce, since even a breeze stirs remains. —are petals still our paths?"}
 STRINGS.UI.WXP_DETAILS.BLOSSOMS_WIN="Blooming Days Win"
 
-STRINGS.REFORGED.DEBUFFS.debuff_flower_dmg = "Fever"
-STRINGS.REFORGED.DEBUFFS.debuff_flower_def = "Solitude"
-STRINGS.REFORGED.DEBUFFS.debuff_flower_speed = "Boldness"
-STRINGS.REFORGED.DEBUFFS.debuff_flower_regen = "Calmness"
-STRINGS.REFORGED.DEBUFFS.debuff_flower_unhit = "Absorption"  --바꿀떄 블로썸 파일안 AddSpice안도 바꾸기
+STRINGS.REFORGED.DEBUFFS.debuff_flower_dmg = "Fever\n\n25% Damage\nTake Damage When No Attack"
+STRINGS.REFORGED.DEBUFFS.debuff_flower_def = "Solitude\n\n25% Defense\nNo Sound\nCan't See"
+STRINGS.REFORGED.DEBUFFS.debuff_flower_speed = "Boldness\n\n25% Speed\nStop Cooldown\n-25% Defense"
+STRINGS.REFORGED.DEBUFFS.debuff_flower_regen = "Calmness\n\nHeal Slowly\nGet Long Calmless Going you Sleep"
+STRINGS.REFORGED.DEBUFFS.debuff_flower_unhit = "Absorption\n\n25% Faster Cooldown\nTurn slippery when attacking or attacked"  --바꿀떄 블로썸 파일안 AddSpice안도 바꾸기
 
 STRINGS.NAMES.ENTHUSIASM = "Fever"
 STRINGS.NAMES.SOLITUDE = "Solitude"
