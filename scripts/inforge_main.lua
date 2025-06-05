@@ -878,3 +878,70 @@ AddPlayerPostInit(function(inst)
     end)
 end)
 ]]--
+
+
+
+
+
+
+
+
+AddComponentPostInit("debuff",function(self)
+    self.current_stack = 0;
+    self.max_stack = 1;
+
+    self.debuff_stack = _G.net_tinybyte(self.inst.GUID, "debuff.stack", "debuff_stack_dirty")
+
+    self.stackchanged = function(inst) 
+        
+    end
+
+    self.target:ListenForEvent("debuff_stack_dirty",)
+
+    function self:SetMaxStack(stack)
+        self.max_stack = stack
+    end
+
+    function self:GetMaxStack()
+        return self.max_stack or 1
+    end
+
+    function self:AddStack(val)
+        self.current_stack = self.current_stack + val;
+        self.debuff_stack:set(self.current_stack)
+
+        if val ~= 0 then 
+            self.target:PushEvent("stackchanged",{name = self.name, stack = self.current_stack, value = val, previous = self.current_stack - val})
+        end
+    end
+
+    function self:GetCurrentStack()
+        return self.current_stack or 0
+    end
+
+    function self:DebuffRemoved()
+        self.target:PushEvent("debuffremoved", {name = self.name})
+    end
+
+
+    local _oldOnDetach = self.OnDetach
+
+    self.OnDetach = function(self)
+        if self:GetMaxStack() > 1 then
+            self:DebuffRemoved()
+        end
+
+        _oldOnDetach(self)
+    end
+end)
+
+AddPlayerPostInit(function(inst)
+    inst.stackdebuffs_stack = _G.net_string(inst.GUID, "stackdebuffs_stack", "stackdebuffs_stack_dirty")
+
+    inst:ListenForEvent("stackchanged",fn)
+    inst:ListenForEvent("debuffremoved",fnn)
+end)
+
+AddComponentPostInit("debuffable",function(self)
+
+end)

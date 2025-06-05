@@ -401,11 +401,13 @@ local function AddBuff(inst, target)
         end
     elseif inst.type == "speed" then
         if target.components.locomotor and target.components.buffable and target.components.combat then
-            target.components.locomotor:SetExternalSpeedMultiplier(target, "flower_speed_buff", 1 + inst.buffs.speed * inst.current_mult)
+
+            local stacksize = inst.components.debuff:GetCurrentStack()
+            target.components.locomotor:SetExternalSpeedMultiplier(target, "flower_speed_buff", 1 + (inst.buffs.speed * inst.current_mult) * stacksize)
             target.components.buffable:AddBuff("flower_speedcooldown_debuff", {{name = "cooldown", val = 9999, type = "add"}})
             UpdateTargetsInventoryCooldowns(target,true)
             target:ListenForEvent("equip",DebuffEquip,target)
-            target.components.combat:AddDamageBuff("flower_defense_debuff", {buff = 1.5}, true)
+            target.components.combat:AddDamageBuff("flower_defense_debuff", {buff = 1 + 0.5 * stacksize}, true)
 
             if _G.REFORGED_SETTINGS.gameplay.map == "hf_eye_arena" then
                 if inst._Speedlight == nil or not inst._Speedlight:IsValid() then
@@ -458,6 +460,15 @@ local function AddBuff(inst, target)
     end
 end
 
+local function isSpeedFlower(inst,value)
+    local flower_name = "debuff_flower_" .. tostring(inst.type) 
+
+    if flower_name == "debuff_flower_speed" then
+        inst.components.debuff:AddStack(value)
+        inst.debuff_stack:set(inst.components.debuff:GetCurrentStack())
+    end
+end
+
 local function OnAttached(inst, target)
     inst:DoTaskInTime(0, function()
         inst.target = target
@@ -467,8 +478,9 @@ local function OnAttached(inst, target)
         end, target)
 
         AddBuff(inst, target)
+        isSpeedFlower(inst,1)
 
-        target["flower_debuff_" .. tostring(inst.type) .. "_timer"] = target:DoTaskInTime(inst.duration, function()
+        target["debuff_flower_" .. tostring(inst.type) .. "_timer"] = target:DoTaskInTime(inst.duration, function()
             inst.components.debuff:Stop()
         end)
     end)
@@ -542,15 +554,15 @@ local function OnExtended(inst, target)
             AddBuff(inst, target)
         end
 
-       target["flower_debuff_" .. tostring(inst.type) .. "_timer"] = target:DoTaskInTime(inst.duration, function()
+       target["debuff_flower_" .. tostring(inst.type) .. "_timer"] = target:DoTaskInTime(inst.duration, function()
             inst.components.debuff:Stop()
         end)
     end)
 end
 
 local function OnDetached(inst, target)
+    RemoveTask(target["debuff_flower_" .. tostring(inst.type) .. "_timer"])
     RemoveBuff(inst, target, inst.type)
-    RemoveTask(target.flower_debuff_timer)
     inst.AnimState:PlayAnimation("sleepcloud_overlay_pst")
     if inst.source then
         inst.source.targets[target] = nil
@@ -614,6 +626,9 @@ local function fn()
     inst.hit_count = 0 
     ------------------------------------------
 	inst:AddComponent("debuff")
+
+    inst.components.debuff:SetMaxStack(2)
+
 	inst.components.debuff:SetAttachedFn(OnAttached)
     inst.components.debuff:SetExtendedFn(OnExtended)
 	inst.components.debuff:SetDetachedFn(OnDetached)

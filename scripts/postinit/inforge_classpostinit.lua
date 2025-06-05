@@ -17,7 +17,7 @@ AddClassPostConstruct("widgets/game_settings_panel", function(self)
     end
 
     local function CheckException(self,category,name)  --only work by map and waveset    --TODO can check by anything?
-        local map_name          = self.settings.selected.map or self.settings.current.map
+        local map_name  = self.settings.selected.map or self.settings.current.map
         local map_data  = RF_DATA.maps[map_name]
 
         local waveset_data = RF_DATA.wavesets[name]
@@ -196,36 +196,14 @@ end)
 
 
 
---[[
 
 AddClassPostConstruct("widgets/debuff_display", function(self)
-    local _OldUpdate = self.Update
+    local _OldGetDebuffIconInfo = self.GetDebuffIconInfo
 
-    self.Update = function(self)
-        _OldUpdate(self)
-
-        if self.target and self.target.replica.debuffable then
-            local debuffs = self.target.replica.debuffable:GetCurrentDebuffs()
-            local count = 0
-            local row = 1
-            for name,_ in pairs(debuffs) do
-                count = count + 1
-                row = math.ceil(count/self.debuffs_per_row)
-                if not self.icons[count] then
-                    self.icons[count] = self:AddChild(Image())
-                end
-                local icon_info = self:GetDebuffIconInfo(name)
-                self.icons[count]:SetTexture(icon_info.atlas, icon_info.tex)
-                self.icons[count]:SetHoverText(icon_info.hover_text)
-                self.icons[count]:SetPosition((((count - 1) % self.debuffs_per_row) + 1 - 1) * (self.icon_width + self.spacing), (row - 1) * (self.icon_height + self.spacing) * (self.add_icons_top_to_bottom and -1 or 1))
-            end
-            -- Hide extra icons
-            if #self.icons > count then
-                for i = count + 1, #self.icons do
-                    self.icons[i]:Hide()
-                end
-            end
-        end
+    self.GetDebuffIconInfo = function(self,name)
+        return _OldGetDebuffIconInfo(self,name)
     end
 end)
-]]--
+
+
+
