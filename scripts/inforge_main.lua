@@ -770,7 +770,9 @@ AddComponentPostInit("rechargeable", function(self)
 
         self.current_stacks = math.max(self.current_stacks - 1, 0)
 
-        print("[INFORGE] USECHARGE " .. self.current_stacks)
+        if self.owner then
+            self.owner.components.debuffable:AddDebuff("debuff_flower_speed", "debuff_flower")
+        end
 
         --[[
 
@@ -889,29 +891,38 @@ end)
 AddComponentPostInit("debuff",function(self)
     self.current_stack = 0;
     self.max_stack = 1;
+    self.min_stack = 0;
 
     self.debuff_stack = _G.net_tinybyte(self.inst.GUID, "debuff.stack", "debuff_stack_dirty")
 
     self.stackchanged = function(inst) 
-        
+        self.target:PushEvent("stackchanged", {name = self.name, stack = self.current_stack})
     end
-
-    self.target:ListenForEvent("debuff_stack_dirty",)
 
     function self:SetMaxStack(stack)
         self.max_stack = stack
     end
 
     function self:GetMaxStack()
-        return self.max_stack or 1
+        return self.max_stack
+    end
+
+    function self:SetMinStack(stack)
+        self.min_stack = stack
+    end
+
+    function self:GetMinStack()
+        return self.min_stack
     end
 
     function self:AddStack(val)
-        self.current_stack = self.current_stack + val;
-        self.debuff_stack:set(self.current_stack)
+        local result = math.max(self.min_stack, math.min(self.current_stack + val, self.max_stack))
 
-        if val ~= 0 then 
-            self.target:PushEvent("stackchanged",{name = self.name, stack = self.current_stack, value = val, previous = self.current_stack - val})
+        print("[STACK]",result)
+
+        if result ~= nil then
+            self.current_stack = result;
+            self.debuff_stack:set(result)
         end
     end
 
@@ -924,7 +935,25 @@ AddComponentPostInit("debuff",function(self)
     end
 
 
+    local _oldAttachTo = self.AttachTo
     local _oldOnDetach = self.OnDetach
+
+    self.AttachTo = function(self, name, target, followsymbol, followoffset, data, buffer)
+        --[[
+        if self:GetMaxStack() > 1 then
+            self.stackchanged(target)
+        end
+        ]]--
+
+        print("ACTIVATE")
+
+        _oldAttachTo(self, name, target, followsymbol, followoffset, data, buffer)
+
+        if self.target ~= nil then
+            self.target:ListenForEvent("debuff_stack_dirty", self.stackchanged)
+            self.stackchanged(self.target)
+        end
+    end
 
     self.OnDetach = function(self)
         if self:GetMaxStack() > 1 then
@@ -933,15 +962,4 @@ AddComponentPostInit("debuff",function(self)
 
         _oldOnDetach(self)
     end
-end)
-
-AddPlayerPostInit(function(inst)
-    inst.stackdebuffs_stack = _G.net_string(inst.GUID, "stackdebuffs_stack", "stackdebuffs_stack_dirty")
-
-    inst:ListenForEvent("stackchanged",fn)
-    inst:ListenForEvent("debuffremoved",fnn)
-end)
-
-AddComponentPostInit("debuffable",function(self)
-
 end)

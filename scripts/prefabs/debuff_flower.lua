@@ -465,7 +465,6 @@ local function isSpeedFlower(inst,value)
 
     if flower_name == "debuff_flower_speed" then
         inst.components.debuff:AddStack(value)
-        inst.debuff_stack:set(inst.components.debuff:GetCurrentStack())
     end
 end
 

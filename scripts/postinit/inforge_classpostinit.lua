@@ -198,10 +198,43 @@ end)
 
 
 AddClassPostConstruct("widgets/debuff_display", function(self)
-    local _OldGetDebuffIconInfo = self.GetDebuffIconInfo
+    local _OldSetTarget = self.SetTarget
 
-    self.GetDebuffIconInfo = function(self,name)
-        return _OldGetDebuffIconInfo(self,name)
+    local function ApplyStackedPercents(description, stack)
+        return description:gsub("{([%-+]?%d+)}", function(num)
+            local base = _G.tonumber(num)
+            if base then
+                return _G.tostring(base * stack)
+            else
+                return num
+            end
+        end)
+    end
+
+    self._onclientdebuffstackdirty = function(inst, data)
+        if data ~= nil and (data.name ~= nil and STRINGS.REFORGED.DEBUFFS[data.name] ~= nil) and data.stack ~= nil then
+            local debuff_description = STRINGS.REFORGED.DEBUFFS[data.name]
+            local stack = data.stack
+
+            print(STRINGS.REFORGED.DEBUFFS[data.name])
+            print(data.stack)
+
+            STRINGS.REFORGED.DEBUFFS[data.name] = ApplyStackedPercents(debuff_description, stack)
+        end
+        
+        self:Update()
+    end
+
+    self.SetTarget = function(self, target, force_update)
+        _OldSetTarget(self, target, force_update)
+
+        if target and self.target == target then
+            if self.target ~= nil then
+                self.inst:RemoveEventCallback("stackchanged", self._onclientdebuffstackdirty, self.target)
+            end
+
+            self.inst:ListenForEvent("stackchanged", self._onclientdebuffstackdirty, target)
+        end
     end
 end)
 
