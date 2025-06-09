@@ -895,9 +895,9 @@ AddComponentPostInit("debuff",function(self)
 
     self.debuff_stack = _G.net_tinybyte(self.inst.GUID, "debuff.stack", "debuff_stack_dirty")
 
-    self.stackchanged = function(inst) 
-        self.target:PushEvent("stackchanged", {name = self.name, stack = self.current_stack})
-    end
+    self.target:ListenForEvent("debuff_stack_dirty", function()
+        
+    end)
 
     function self:SetMaxStack(stack)
         self.max_stack = stack
@@ -938,22 +938,19 @@ AddComponentPostInit("debuff",function(self)
     local _oldAttachTo = self.AttachTo
     local _oldOnDetach = self.OnDetach
 
+    --[[
     self.AttachTo = function(self, name, target, followsymbol, followoffset, data, buffer)
-        --[[
+
         if self:GetMaxStack() > 1 then
             self.stackchanged(target)
         end
-        ]]--
+
 
         print("ACTIVATE")
 
         _oldAttachTo(self, name, target, followsymbol, followoffset, data, buffer)
-
-        if self.target ~= nil then
-            self.target:ListenForEvent("debuff_stack_dirty", self.stackchanged)
-            self.stackchanged(self.target)
-        end
     end
+    ]]--
 
     self.OnDetach = function(self)
         if self:GetMaxStack() > 1 then

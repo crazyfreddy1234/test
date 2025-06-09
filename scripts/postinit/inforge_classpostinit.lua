@@ -211,10 +211,10 @@ AddClassPostConstruct("widgets/debuff_display", function(self)
         end)
     end
 
-    self._onclientdebuffstackdirty = function(inst, data)
+    self._onclientdebuffstackdirty = function(inst)
         if data ~= nil and (data.name ~= nil and STRINGS.REFORGED.DEBUFFS[data.name] ~= nil) and data.stack ~= nil then
             local debuff_description = STRINGS.REFORGED.DEBUFFS[data.name]
-            local stack = data.stack
+            local stack = self.debuff_stack:value()
 
             print(STRINGS.REFORGED.DEBUFFS[data.name])
             print(data.stack)
@@ -230,10 +230,10 @@ AddClassPostConstruct("widgets/debuff_display", function(self)
 
         if target and self.target == target then
             if self.target ~= nil then
-                self.inst:RemoveEventCallback("stackchanged", self._onclientdebuffstackdirty, self.target)
+                self.inst:RemoveEventCallback("debuff_stack_dirty", self._onclientdebuffstackdirty, self.target)
             end
 
-            self.inst:ListenForEvent("stackchanged", self._onclientdebuffstackdirty, target)
+            self.inst:ListenForEvent("debuff_stack_dirty", self._onclientdebuffstackdirty, target)
         end
     end
 end)
