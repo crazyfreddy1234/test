@@ -210,6 +210,25 @@ local function FindTargetsPriority(inst, radius, R_PRIORITY, M_PRIORITY, H_PRIOR
     return result_players
 end
 
+local function EncodeDebuffs(debuffs)
+    local parts = {}
+    for name, stack in pairs(debuffs) do
+        table.insert(parts, name .. "=" .. _G.tostring(stack))
+    end
+    return table.concat(parts, ";")
+end
+
+local function DecodeDebuffs(data_str)
+    local result = {}
+    for pair in string.gmatch(data_str, "([^;]+)") do
+        local name, stack = string.match(pair, "([^=]+)=([^=]+)")
+        if name and stack then
+            result[name] = _G.tonumber(stack)
+        end
+    end
+    return result
+end
+
 return {
     TurnOnPowerAllPlayer = TurnOnPowerAllPlayer,
     TurnOffPowerAllPlayer = TurnOffPowerAllPlayer,
@@ -223,4 +242,6 @@ return {
     H_FindTargets = H_FindTargets,
     T_FindTargets = T_FindTargets,
     FindTargetsPriority = FindTargetsPriority,
+    EncodeDebuffs = EncodeDebuffs,
+    DecodeDebuffs = DecodeDebuffs,
 }

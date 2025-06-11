@@ -770,8 +770,18 @@ AddComponentPostInit("rechargeable", function(self)
 
         self.current_stacks = math.max(self.current_stacks - 1, 0)
 
-        if self.owner then
-            self.owner.components.debuffable:AddDebuff("debuff_flower_speed", "debuff_flower")
+        if self.owner and _G.TheWorld.ismastersim then
+            local ice_circle = _G.SpawnPrefab("winter_impact_ping_fx")
+            local player_pos = self.owner:GetPosition() or _G.Vector3(0,0,0)
+
+            ice_circle.Transform:SetPosition(player_pos:Get())
+            ice_circle.Transform:SetScale(0.86, 0.86, 0.86)
+
+            _G.SpawnAt("flower_aoe", ice_circle):ApplyBuffs(nil, "speed", self.owner, nil, 1.5, 1, 3.8)
+
+            ice_circle:DoTaskInTime(2.3, function(inst)
+                ice_circle:KillFX()
+            end)    
         end
 
         --[[
@@ -887,17 +897,27 @@ end)
 
 
 
-
 AddComponentPostInit("debuff",function(self)
     self.current_stack = 0;
-    self.max_stack = 1;
+    self.max_stack = 2;
     self.min_stack = 0;
 
-    self.debuff_stack = _G.net_tinybyte(self.inst.GUID, "debuff.stack", "debuff_stack_dirty")
 
-    self.target:ListenForEvent("debuff_stack_dirty", function()
-        
-    end)
+
+
+    local function StackChange(inst)
+        if inst.components.debuff and inst.components.debuff.target then
+            local debuff = inst.components.debuff
+            local stack = debuff.debuff_stack:value() or 0
+            local player = debuff.target
+            local client_debuffable = player.components.debuffable
+
+            client_debuffable:SetDebuffStack(debuff.name, stack)
+        end
+    end
+
+    self.debuff_stack = _G.net_tinybyte(self.inst.GUID, "debuff.stack", "debuff_stack_dirty")
+    --self.inst:ListenForEvent("debuff_stack_dirty", StackChange)
 
     function self:SetMaxStack(stack)
         self.max_stack = stack
@@ -958,5 +978,40 @@ AddComponentPostInit("debuff",function(self)
         end
 
         _oldOnDetach(self)
+    end
+end)
+
+AddComponentPostInit("debuffable",function(self)
+
+    local _oldAddDebuff = self.AddDebuff
+
+    self.AddDebuff = function(self, name, prefab, data, buffer)
+
+        local result = _oldAddDebuff(self, name, prefab, data, buffer)
+
+        -- 후처리 코드: result를 기반으로 작업 가능
+        local stackdebuff = _G.INFORGE_STACK_DEBUFFS
+        for i, debuff_name in pairs(stackdebuff) do
+            if name == debuff_name then
+
+                local function CheckVal(inst)
+                    debuff_stack = result.components.debuff.debuff_stack:value()
+                    print("DEBUFFABLE",debuff_stack)
+                end
+
+                result.valFn = CheckVal(result)
+
+                if result.stackdirty_fn ~= nil then
+                    result:RemoveEventCallback("debuff_stack_dirty",result.valFn)
+                end
+
+                result.stackdirty_fn = result:ListenForEvent("debuff_stack_dirty", result.valFn)
+            
+            end
+        end
+
+        return result
+
+        
     end
 end)

@@ -403,6 +403,7 @@ local function AddBuff(inst, target)
         if target.components.locomotor and target.components.buffable and target.components.combat then
 
             local stacksize = inst.components.debuff:GetCurrentStack()
+            print("STACKSIZE",stacksize)
             target.components.locomotor:SetExternalSpeedMultiplier(target, "flower_speed_buff", 1 + (inst.buffs.speed * inst.current_mult) * stacksize)
             target.components.buffable:AddBuff("flower_speedcooldown_debuff", {{name = "cooldown", val = 9999, type = "add"}})
             UpdateTargetsInventoryCooldowns(target,true)
@@ -465,6 +466,8 @@ local function isSpeedFlower(inst,value)
 
     if flower_name == "debuff_flower_speed" then
         inst.components.debuff:AddStack(value)
+    else
+        print("NOT SPEED FLOWER" .. flower_name)
     end
 end
 
@@ -476,8 +479,8 @@ local function OnAttached(inst, target)
             inst.components.debuff:Stop()
         end, target)
 
-        AddBuff(inst, target)
         isSpeedFlower(inst,1)
+        AddBuff(inst, target)
 
         target["debuff_flower_" .. tostring(inst.type) .. "_timer"] = target:DoTaskInTime(inst.duration, function()
             inst.components.debuff:Stop()
@@ -548,9 +551,13 @@ end
 
 local function OnExtended(inst, target)
     inst:DoTaskInTime(0, function()
+        isSpeedFlower(inst,1)
+
+        RemoveBuff(inst, target, inst.previous_type)
+        AddBuff(inst, target)
+
         if inst.previous_type ~= inst.type or inst.was_buff ~= inst.is_buff or inst.type == "regen" and not inst.is_buff then
-            RemoveBuff(inst, target, inst.previous_type)
-            AddBuff(inst, target)
+            
         end
 
        target["debuff_flower_" .. tostring(inst.type) .. "_timer"] = target:DoTaskInTime(inst.duration, function()
