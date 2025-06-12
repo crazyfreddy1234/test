@@ -981,6 +981,10 @@ AddComponentPostInit("debuff",function(self)
     end
 end)
 
+AddClassPostConstruct("components/debuffable_replica", function(inst)
+    
+end)
+
 AddComponentPostInit("debuffable",function(self)
 
     local _oldAddDebuff = self.AddDebuff
@@ -995,14 +999,18 @@ AddComponentPostInit("debuffable",function(self)
             if name == debuff_name then
 
                 local function CheckVal(inst)
-                    debuff_stack = result.components.debuff.debuff_stack:value()
-                    print("DEBUFFABLE",debuff_stack)
+                    inst:DoTaskInTime(0, function(inst)
+                        local debuff_stack = result.components.debuff.debuff_stack:value()
+                        print(result.components.debuff)
+                        print(result.replica.debuff)
+                        print("DEBUFFABLE", debuff_stack)
+                    end)
                 end
 
                 result.valFn = CheckVal(result)
 
                 if result.stackdirty_fn ~= nil then
-                    result:RemoveEventCallback("debuff_stack_dirty",result.valFn)
+                    result:RemoveEventCallback("debuff_stack_dirty", result.valFn)
                 end
 
                 result.stackdirty_fn = result:ListenForEvent("debuff_stack_dirty", result.valFn)
