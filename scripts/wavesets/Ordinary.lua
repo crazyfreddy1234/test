@@ -20,7 +20,6 @@ local AddReforgedPrefab = RPX.AddReforgedPrefab
 local GetReforgedSettings = RPX.GetReforgedSettings
 local GetDupeGroups = RPX.GetDupeGroups
 local GameplayHasTag = RPX.GameplayHasTag
-local AddReforgedWorld = RPX.AddReforgedWorld
 
 local duplicator=GetReforgedSettings("gameplay","mutators").mob_duplicator
 local ISHARD   = GameplayHasTag("difficulty","hard")

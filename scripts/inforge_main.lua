@@ -894,7 +894,11 @@ end)
 
 
 
+AddPlayerPostInit(function(inst)
 
+    inst.stackdebuff_data = _G.net_tinybyte(inst.GUID, "stackdebuff_data", "stackdebuff_data_dirty")
+
+end)
 
 
 AddComponentPostInit("debuff",function(self)
@@ -981,10 +985,6 @@ AddComponentPostInit("debuff",function(self)
     end
 end)
 
-AddClassPostConstruct("components/debuffable_replica", function(inst)
-    
-end)
-
 AddComponentPostInit("debuffable",function(self)
 
     local _oldAddDebuff = self.AddDebuff
@@ -1002,7 +1002,7 @@ AddComponentPostInit("debuffable",function(self)
                     inst:DoTaskInTime(0, function(inst)
                         local debuff_stack = result.components.debuff.debuff_stack:value()
                         print(result.components.debuff)
-                        print(result.replica.debuff)
+                        print(ThePlayer.replica.debuff)
                         print("DEBUFFABLE", debuff_stack)
                     end)
                 end

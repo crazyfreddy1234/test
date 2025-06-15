@@ -148,7 +148,6 @@ end)
 local StackDisplay = require("widgets/stackdisplay")
 
 AddClassPostConstruct("widgets/inventorybar", function(self)
-    print("[INV]ACTIVATE")
     self.owner:DoTaskInTime(_G.FRAMES,function()
         if not self.owner or not self.owner.components or not self.owner.components.inventory then
             return
@@ -157,8 +156,6 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
         -- 장착된 무기인지 확인
         local inv = self.owner.components.inventory
         local equipped = inv and inv:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
-
-        print("[INV]",equipped)
 
         -- 현재 ItemTile이 장착 무기에 해당하지 않으면 무시
         if not (equipped) then

@@ -1,8 +1,6 @@
- local RPX,_W=TUNING.modfns["workshop-2038128735"],UTIL.WAVESET
- local GetReforgedSettings,GameplayHasTag,AddReforgedPrefab,AddWaveTimer,SetLeashByID,AdvanceTriggers,PseudoSOS=RPX.GetReforgedSettings,RPX.GameplayHasTag,RPX.AddReforgedPrefab,RPX.AddWaveTimer,RPX.SetLeashByID,RPX.AdvanceTriggers
- local teampresets,PairRhinosByID=RPX.teampresets,RPX.PairRhinosByID
- local BroSetup = RPX.BroSetup
  
+
+
 --MOB SPAWNS--
 
  local rhinopairs={{1,"r0s1",3,"r0s1"}}

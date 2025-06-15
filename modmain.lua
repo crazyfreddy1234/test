@@ -1,7 +1,10 @@
 local PUGNAX="workshop-2038128735"
 RPXT=TUNING[PUGNAX]
 RPX=TUNING.modfns and TUNING.modfns[PUGNAX]
-if not (RPXT and RPX) then return end
+if not (RPXT and RPX) then 
+    print("asdfasdfasdf",RPXT,RPX)
+    return 
+end
 
 local RPX,RPXT=RPX,RPXT
 local AddGameplayTag,GetUtil,ImagePath,AddMode,AddWaveset,AddDifficulty,AddGametype,AddForgeLord=RPX.AddGameplayTag,RPX.GetUtil,RPX.ImagePath,RPX.AddMode,RPX.AddWaveset,RPX.AddDifficulty,RPX.AddGametype,RPX.AddForgeLord
