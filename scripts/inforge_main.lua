@@ -985,6 +985,21 @@ AddComponentPostInit("debuff",function(self)
     end
 end)
 
+local function PlayerDebuffStackUpdate(inst, data)
+    if (inst ~= nil and _G.ThePlayer ~= nil) and inst == _G.ThePlayer then
+
+    else
+        print("NO INST OR THEPLAYER")
+        return
+    end
+end
+
+AddPlayerPostInit(function(inst)
+    inst.stackdebuffchanged = _G.net_string(inst.GUID, "stack.debuff.changed", "stack_debuff_changed_dirty")
+
+    inst:ListenForEvent("stack_debuff_changed_dirty", PlayerDebuffStackUpdate)
+end)
+
 AddComponentPostInit("debuffable",function(self)
 
     local _oldAddDebuff = self.AddDebuff
@@ -996,25 +1011,10 @@ AddComponentPostInit("debuffable",function(self)
         -- 후처리 코드: result를 기반으로 작업 가능
         local stackdebuff = _G.INFORGE_STACK_DEBUFFS
         for i, debuff_name in pairs(stackdebuff) do
-            if name == debuff_name then
-
-                local function CheckVal(inst)
-                    inst:DoTaskInTime(0, function(inst)
-                        local debuff_stack = result.components.debuff.debuff_stack:value()
-                        print(result.components.debuff)
-                        print(ThePlayer.replica.debuff)
-                        print("DEBUFFABLE", debuff_stack)
-                    end)
-                end
-
-                result.valFn = CheckVal(result)
-
-                if result.stackdirty_fn ~= nil then
-                    result:RemoveEventCallback("debuff_stack_dirty", result.valFn)
-                end
-
-                result.stackdirty_fn = result:ListenForEvent("debuff_stack_dirty", result.valFn)
-            
+            if name == debuff_name and self.inst ~= nil and self.inst.stackdebuffchanged ~= nil then
+                result:DoTaskInTime(_G.FRAMES, function()
+                    print("ADDDEBUFF",result.components.debuff:GetCurrentStack())
+                end)
             end
         end
 
