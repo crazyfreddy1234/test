@@ -484,6 +484,8 @@ AddPlayerPostInit(function(inst)
 
     -----------------------------------------------------------------------------------------------------------------------------
 
+    --[[
+
     inst.net_health_percent = _G.net_float(inst.GUID, "playerhud.net_health_percent", "healthdirty")
     inst.net_health_percent:set(1)
     
@@ -501,6 +503,8 @@ AddPlayerPostInit(function(inst)
             end
         end)
     end
+
+    ]]--
 
     -----------------------------------------------------------------------------------------------------------------------------
 
@@ -564,6 +568,19 @@ AddPlayerPostInit(function(inst)
     ----------------------------------------------------------------------
 
         inst:DoTaskInTime(0,function()
+            if not (data.item.components.equippable and data.item.components.equippable.equipslot == _G.EQUIPSLOTS.HANDS) then
+                return
+            end
+
+            if data ~= nil and data.item ~= nil 
+            and data.item.components.rechargeable ~= nil and data.item.components.rechargeable:GetMaxStack() < 2 then
+
+                if inst and inst.stackdisplay ~= nil then
+                    inst.stackdisplay:HideText()
+                    return
+                end
+            end
+
             if inst and inst:IsValid() and inst._stack_count ~= nil
                 and data ~= nil and data.item ~= nil 
                 and data.item.components.rechargeable ~= nil and data.item.components.rechargeable:GetMaxStack() >= 2 then
@@ -580,6 +597,10 @@ AddPlayerPostInit(function(inst)
 
     local function OnUnequip(inst, data)
         if data ~= nil and data.item ~= nil then
+            if not (data.item.components.equippable and data.item.components.equippable.equipslot == _G.EQUIPSLOTS.HANDS) then
+                return
+            end
+
             data.item:RemoveEventCallback("rechargechange", CheckFinishRecharge)
 
             if inst and inst.stackdisplay ~= nil then
@@ -672,7 +693,7 @@ local function FindPlayerByUserID(userid)
             return player
         end
     end
-    print("[INFERNAL] FindPlayerByUserID : no player")
+
     return nil
 end
 
@@ -703,8 +724,6 @@ AddComponentPostInit("rechargeable", function(self)
 
     self.inst:AddTag("multi_recharge")
 
-    print("[INFORGE] " .. self.pickup_cooldown)
-
 	-- ✅ 스택 상태 초기화
 	self.max_stacks = 2
     self.current_stacks = self.max_stacks
@@ -714,7 +733,7 @@ AddComponentPostInit("rechargeable", function(self)
 
 
     local Old_StartRecharge = self.StartRecharge
-    function self:StartRecharge()
+    self.StartRecharge = function(self)
         if self.max_stacks ~= nil and self.max_stacks > 1 then
 
             self.inst:DoTaskInTime(0,function()
@@ -757,11 +776,8 @@ AddComponentPostInit("rechargeable", function(self)
                     self.inst:PushEvent("forcerechargechange", { percent = 0, overtime = true })
                 end
             end)
-
         else
-
             Old_StartRecharge(self)
-
         end
     end
 
@@ -769,20 +785,6 @@ AddComponentPostInit("rechargeable", function(self)
         if self.current_stacks <= 0 then return false end
 
         self.current_stacks = math.max(self.current_stacks - 1, 0)
-
-        if self.owner and _G.TheWorld.ismastersim then
-            local ice_circle = _G.SpawnPrefab("winter_impact_ping_fx")
-            local player_pos = self.owner:GetPosition() or _G.Vector3(0,0,0)
-
-            ice_circle.Transform:SetPosition(player_pos:Get())
-            ice_circle.Transform:SetScale(0.86, 0.86, 0.86)
-
-            _G.SpawnAt("flower_aoe", ice_circle):ApplyBuffs(nil, "speed", self.owner, nil, 1.5, 1, 3.8)
-
-            ice_circle:DoTaskInTime(2.3, function(inst)
-                ice_circle:KillFX()
-            end)    
-        end
 
         --[[
 
@@ -804,12 +806,12 @@ AddComponentPostInit("rechargeable", function(self)
 
     -- ✅ 기존 FinishRecharge 후 다음 큐 시작
     local _FinishRecharge = self.FinishRecharge
-    function self:FinishRecharge(...)
+    self.FinishRecharge = function(...)
         if _FinishRecharge then _FinishRecharge(self, ...) end
 
         self.current_stacks = math.min(self.current_stacks + 1, self.max_stacks)
         table.remove(self.recharge_queue, 1)
-
+ 
         if #self.recharge_queue > 0 then
             self:StartRecharge() -- 다음 큐 실행
         end
@@ -895,34 +897,34 @@ end)
 
 
 AddPlayerPostInit(function(inst)
+    inst.stackdebuff_data   = _G.net_string(inst.GUID, "stackdebuff_data", "stackdebuff_data_dirty")
+    inst.stackdebuff_update = _G.net_bool(inst.GUID, "stackdebuff_update", "stackdebuff_update_dirty")
 
-    inst.stackdebuff_data = _G.net_tinybyte(inst.GUID, "stackdebuff_data", "stackdebuff_data_dirty")
-
+    inst.stackdebuff_update:set(false)
 end)
 
 
 AddComponentPostInit("debuff",function(self)
     self.current_stack = 0;
-    self.max_stack = 2;
+    self.max_stack = 1;
     self.min_stack = 0;
 
+    self.debuff_stack = _G.net_tinybyte(self.inst.GUID, "debuff.stack", "debuff_stack_dirty")
 
+    local function StackChange(self, inst)
+        if inst then
+            local debuff_name = self.name
 
+            local stack = self:GetCurrentStack() or 0
 
-    local function StackChange(inst)
-        if inst.components.debuff and inst.components.debuff.target then
-            local debuff = inst.components.debuff
-            local stack = debuff.debuff_stack:value() or 0
-            local player = debuff.target
-            local client_debuffable = player.components.debuffable
+            local stackdebuff_str = string.format("{%s=%s}", tostring(debuff_name), tostring(stack))
+            local name, stk = string.match(stackdebuff_str, "{([^=]+)=([^}]+)}")
 
-            client_debuffable:SetDebuffStack(debuff.name, stack)
+            inst.stackdebuff_data:set(stackdebuff_str)
+            inst.stackdebuff_update:set(not inst.stackdebuff_update:value())
         end
     end
-
-    self.debuff_stack = _G.net_tinybyte(self.inst.GUID, "debuff.stack", "debuff_stack_dirty")
-    --self.inst:ListenForEvent("debuff_stack_dirty", StackChange)
-
+    
     function self:SetMaxStack(stack)
         self.max_stack = stack
     end
@@ -942,11 +944,9 @@ AddComponentPostInit("debuff",function(self)
     function self:AddStack(val)
         local result = math.max(self.min_stack, math.min(self.current_stack + val, self.max_stack))
 
-        print("[STACK]",result)
-
         if result ~= nil then
             self.current_stack = result;
-            self.debuff_stack:set(result)
+            StackChange(self, self.target)
         end
     end
 
@@ -954,72 +954,409 @@ AddComponentPostInit("debuff",function(self)
         return self.current_stack or 0
     end
 
-    function self:DebuffRemoved()
-        self.target:PushEvent("debuffremoved", {name = self.name})
-    end
-
-
-    local _oldAttachTo = self.AttachTo
-    local _oldOnDetach = self.OnDetach
-
-    --[[
-    self.AttachTo = function(self, name, target, followsymbol, followoffset, data, buffer)
-
-        if self:GetMaxStack() > 1 then
-            self.stackchanged(target)
-        end
-
-
-        print("ACTIVATE")
-
-        _oldAttachTo(self, name, target, followsymbol, followoffset, data, buffer)
-    end
-    ]]--
-
-    self.OnDetach = function(self)
-        if self:GetMaxStack() > 1 then
-            self:DebuffRemoved()
-        end
-
-        _oldOnDetach(self)
-    end
 end)
 
-local function PlayerDebuffStackUpdate(inst, data)
-    if (inst ~= nil and _G.ThePlayer ~= nil) and inst == _G.ThePlayer then
+AddComponentPostInit("playercontroller",function(self)
+    local Old_OnRightClick = self.OnRightClick
 
-    else
-        print("NO INST OR THEPLAYER")
-        return
-    end
-end
-
-AddPlayerPostInit(function(inst)
-    inst.stackdebuffchanged = _G.net_string(inst.GUID, "stack.debuff.changed", "stack_debuff_changed_dirty")
-
-    inst:ListenForEvent("stack_debuff_changed_dirty", PlayerDebuffStackUpdate)
-end)
-
-AddComponentPostInit("debuffable",function(self)
-
-    local _oldAddDebuff = self.AddDebuff
-
-    self.AddDebuff = function(self, name, prefab, data, buffer)
-
-        local result = _oldAddDebuff(self, name, prefab, data, buffer)
-
-        -- 후처리 코드: result를 기반으로 작업 가능
-        local stackdebuff = _G.INFORGE_STACK_DEBUFFS
-        for i, debuff_name in pairs(stackdebuff) do
-            if name == debuff_name and self.inst ~= nil and self.inst.stackdebuffchanged ~= nil then
-                result:DoTaskInTime(_G.FRAMES, function()
-                    print("ADDDEBUFF",result.components.debuff:GetCurrentStack())
-                end)
+    self.OnRightClick = function(self, down)
+        if not self:UsingMouse() then
+            return
+        elseif not down then
+            if self:IsEnabled() then
+                self:RemoteStopControl(_G.CONTROL_SECONDARY)
             end
+            return
         end
 
-        return result
+        self:ClearActionHold()
 
+        self.startdragtime = nil
+        self.startdoubleclicktime = nil
+
+        if self.placer_recipe ~= nil then
+            self:CancelPlacement()
+            return
+        elseif self:IsAOETargeting() then
+            self:CancelAOETargeting()
+            return
+        elseif not self:IsEnabled() or _G.TheInput:GetHUDEntityUnderMouse() ~= nil then
+            return
+        end
+
+        self.actionholdtime = _G.GetTime()
+
+        local act = self:GetRightMouseAction()
+        if act == nil then
+            print("[OnRightClick]","act is nil")
+        else
+            print("[OnRightClick]",act.action.code,act.action.mod_name,act.action.code)
+        end
+        
+
+        Old_OnRightClick(self, down)
+    end
+end)
+
+local start_healing = _G.Action({priority = 10, distance = 20})
+start_healing.str = "Start Healing"
+start_healing.id = "START_CHANNEL_HEALING"
+start_healing.fn = function(act)
+    print("activate healing")
+    if act.doer and act.doer.components.channelcaster then
+		if act.invobject == nil then
+			--off-hand channel casting
+			return act.doer.components.channelcaster:StartChanneling()
+		elseif act.invobject.components.channelcastable and not act.invobject.components.channelcastable:IsAnyUserChanneling() then
+			--equipped item channel casting
+			return act.doer.components.channelcaster:StartChanneling(act.invobject)
+		end
+	end
+	return true
+end
+AddAction(start_healing)
+
+local stop_healing = _G.Action({priority = 10, distance = 20})
+stop_healing.str = "Stop Healing"
+stop_healing.id = "STOP_CHANNEL_HEALING"
+stop_healing.fn = function(act)
+    if act.invobject and
+		act.invobject.components.channelcastable and
+		act.invobject.components.channelcastable:IsUserChanneling(act.doer)
+	then
+		act.invobject.components.channelcastable:StopChanneling()
+	end
+	return true
+end
+AddAction(stop_healing)
+
+local change_staff_mode = _G.Action({priority = 10, distance = 20})
+change_staff_mode.str = "Change Staff Mode"
+change_staff_mode.id = "CASTSPELL_LIVESTAFF"
+change_staff_mode.fn = function(act)
+    if act.invobject and
+		act.invobject.components.channelcastable and
+		act.invobject.components.channelcastable:IsUserChanneling(act.doer)
+	then
+		act.invobject.components.channelcastable:StopChanneling()
+	end
+
+    if act.invobject and act.invobject.staff_mode then
+        local reverse_staff_mode = not act.invobject.staff_mode:value()
+
+        act.invobject.staff_mode:set(reverse_staff_mode)
+    end
+    
+	return true
+end
+AddAction(change_staff_mode)
+
+
+
+AddComponentAction("POINT", "inventoryitem", function(inst, doer, pos, actions, right, target)
+    if right then
+        if doer.Inforge_Skill_Key:value() == "nil" then
+            if inst:HasTag("startchaneeling") then
+                table.insert(actions, _G.ACTIONS.STOP_CHANNEL_HEALING)
+            elseif not inst:HasTag("startchaneeling") then
+                table.insert(actions, _G.ACTIONS.START_CHANNEL_HEALING)
+            end
+        elseif doer.Inforge_Skill_Key:value() == "SHIFT" then
+            table.insert(actions, _G.ACTIONS.CASTSPELL_LIVESTAFF)
+        elseif doer.Inforge_Skill_Key:value() == "CTRL" then
+
+        elseif doer.Inforge_Skill_Key:value() == "ALT" then
+
+        else
+
+        end
         
     end
 end)
+
+AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.START_CHANNEL_HEALING, "start_channelcast_inforge"))
+AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.START_CHANNEL_HEALING, "start_channelcast_inforge"))
+
+AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.STOP_CHANNEL_HEALING, "doshortaction"))
+AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.STOP_CHANNEL_HEALING, "doshortaction"))
+
+AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.CASTSPELL_LIVESTAFF, "doshortaction"))
+AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.CASTSPELL_LIVESTAFF, "doshortaction"))
+
+local function printinvalidplatform(rpcname, player, action, relative_x, relative_z, platform, platform_relative)
+	if platform_relative and platform == nil then
+		local player_pt = player ~= nil and player:GetPosition() or Vector3(math.huge, math.huge, math.huge)
+		print(string.format("FAILED TO FIND PLATFORM IN RPC: %s, Action: %s, Player: %s (%0.2f, %0.2f), Playform Offset: %0.2f, %0.2f (len: %0.2f)", rpcname, tostring(action), tostring(player), player_pt.x, player_pt.z, relative_x, relative_z, VecUtil_Length(relative_x, relative_z)))
+	end
+end
+
+local function ConvertPlatformRelativePositionToAbsolutePosition(relative_x, relative_z, platform, platform_relative)
+    if platform_relative then
+		if platform == nil then
+			return
+		end
+		local y
+		relative_x, y, relative_z = platform.entity:LocalToWorldSpace(relative_x, 0, relative_z)
+	end
+    return relative_x, relative_z
+end
+
+local function IsPointInRange(player, x, z)
+    local px, py, pz = player.Transform:GetWorldPosition()
+    return distsq(x, z, px, pz) <= 4096
+end
+
+AddModRPCHandler("Infernal_Forge_RPC", "RightClick", function(player, action, x, z, target, rotation, isreleased, controlmods, noforce, mod_name, platform, platform_relative)
+        if not (checknumber(action) and
+                checknumber(x) and
+                checknumber(z) and
+                optentity(target) and
+                optnumber(rotation) and
+                optbool(isreleased) and
+                optnumber(controlmods) and
+                optbool(noforce) and
+                optstring(mod_name) and
+				optentity(platform) and
+				checkbool(platform_relative)) then
+            printinvalid("RightClick", player)
+            return
+        end
+		local playercontroller = player.components.playercontroller
+		if playercontroller ~= nil then
+			printinvalidplatform("RightClick", player, action, x, z, platform, platform_relative)
+			x, z = ConvertPlatformRelativePositionToAbsolutePosition(x, z, platform, platform_relative)
+			if x ~= nil then
+				if IsPointInRange(player, x, z) and (rotation == nil or (rotation > -360.1 and rotation < 360.1)) then
+                    print("[Infernal_Forge_RPC rightclick]",mod_name)
+					--playercontroller:OnRemoteRightClick(action, Vector3(x, 0, z), target, rotation, isreleased, controlmods, noforce, mod_name)
+				else
+					print("Remote right click out of range")
+				end
+			end
+		end
+end)
+
+AddModRPCHandler("Infernal_Forge_RPC", "SendMousePos", function(player, x, z, mode)
+    local pos = _G.Vector3(x, 0, z)
+    local weapon = player.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
+
+    if weapon and mode == "healing" and weapon.heal_fn then
+        weapon.heal_fn(weapon, pos)
+    elseif weapon and mode == "dealing" and weapon.deal_fn then
+        weapon.deal_fn(weapon, pos)
+    end
+end)
+
+--[[
+local CASTAOE_TAG_TUNING = TUNING.FORGE.CASTAOE_TAG_TO_STATE
+
+CASTAOE_TAG_TUNING[13] = {
+    must_tags = {"channelhealing"},
+    state = "start_channelcast",
+}
+]]--
+
+local INFORGE_STATES = require("inforge_state")
+
+for _, state in ipairs(INFORGE_STATES.CLIENT_STATES) do
+	AddStategraphState("wilson_client", state)
+end
+
+for _, state in ipairs(INFORGE_STATES.SERVER_STATES) do
+	AddStategraphState("wilson", state)
+end
+
+
+local TheInput = _G.TheInput
+local TheNet = _G.TheNet
+
+-- 키 코드 → 이름 매핑
+local KEY_NAMES = {
+    [303] = "SHIFT",
+    [304] = "SHIFT",
+    [305] = "CTRL",
+    [306] = "CTRL",
+    [307] = "ALT",
+    [308] = "ALT",
+    [400] = "ALT",
+    [401] = "CTRL",
+    [402] = "SHIFT",
+}
+
+------------------------------------------------
+-- 1. 서버에서 RPC 받는 부분
+------------------------------------------------
+AddModRPCHandler("Infernal_Forge_RPC", "SkillKeyState", function(player, keyname, state)
+    -- keyname : SHIFT, CTRL, ALT
+    -- STATE   : up, down
+
+    if state == "down" then
+        player.Inforge_Skill_Key:set(keyname)
+    else
+        if player.Inforge_Skill_Key:value() == keyname then
+            player.Inforge_Skill_Key:set("nil")
+        end
+    end
+end)
+
+------------------------------------------------
+-- 2. 클라이언트에서 입력 감지
+------------------------------------------------
+
+AddPlayerPostInit(function(inst)
+    inst.Inforge_Skill_Key = _G.net_string(inst.GUID, "Inforge_Skill_Key", "Inforge_Skill_Key_dirty")
+
+    inst.Inforge_Skill_Key:set("nil")
+
+    inst:ListenForEvent("actionfailed",function(inst, data)
+        print(data.action,data.reason)
+    end)
+
+    if not TheNet:IsDedicated() then
+        TheInput:AddKeyHandler(function(key, down)
+            local name = KEY_NAMES[key]
+            if name then
+                if down then
+                    SendModRPCToServer(GetModRPC("Infernal_Forge_RPC", "SkillKeyState"),name, "down")
+                else
+                    SendModRPCToServer(GetModRPC("Infernal_Forge_RPC", "SkillKeyState"),name, "up")
+                end
+            end
+        end)
+    end
+end)
+
+AddComponentPostInit("playercontroller", function(self)
+    local _oldOnRemoteRightClick = self.OnRemoteRightClick
+
+    self.OnRemoteRightClick = function(self, actioncode, position, target, rotation, isreleased, controlmodscode, noforce, mod_name)
+        print("[OnRemoteRightClick]",actioncode, position, target, rotation, isreleased, controlmodscode, noforce, mod_name, self.ismastersim, self:IsEnabled(), self.handler)
+        if self.ismastersim and self:IsEnabled() and self.handler == nil then
+            self.remote_controls[_G.CONTROL_SECONDARY] = 0
+            self:DecodeControlMods(controlmodscode)
+            _G.SetClientRequestedAction(actioncode, mod_name)
+            local lmb,  rmb= self.inst.components.playeractionpicker:DoGetMouseActions(position, target)
+            _G.ClearClientRequestedAction()
+            if isreleased then
+                self.remote_controls[_G.CONTROL_SECONDARY] = nil
+            end
+            self:ClearControlMods()
+
+            print("[before rmb]",rmb.action.code,actioncode,",,,",rmb.action.mod_name,mod_name)
+            if rmb.action.code ~= actioncode then
+                actioncode = rmb.action.code
+            end
+            if rmb.action.mod_name ~= mod_name then
+                mod_name = rmb.action.mod_name
+            end
+            if rmb ~= nil and rmb.action.code == actioncode and rmb.action.mod_name == mod_name then
+                print("[rmb]", rmb.action.code, rmb.action.mod_name)
+                if rmb.action.canforce and not noforce then
+                    rmb:SetActionPoint(self:GetRemotePredictPosition() or self.inst:GetPosition())
+                    rmb.forced = true
+                end
+                rmb.rotation = rotation or rmb.rotation
+                self:DoAction(rmb)
+            --elseif mod_name ~= nil then
+                --print("Remote right click action failed: "..tostring(ACTION_MOD_IDS[mod_name][actioncode]))
+            --else
+                --print("Remote right click action failed: "..tostring(ACTION_IDS[actioncode]))
+            end
+        end
+    end
+end)
+
+--[[
+AddComponentPostInit("playeractionpicker", function(self)
+    local _oldDoGetMouseActions = self.DoGetMouseActions
+
+    self.DoGetMouseActions = function(self, position, target, spellbook)
+        local isaoetargeting = false
+        local wantsaoetargeting = false
+
+        if position == nil then
+            if TheInput:GetHUDEntityUnderMouse() ~= nil then
+                return
+            end
+
+            isaoetargeting = self.inst.components.playercontroller:IsAOETargeting()
+            --@V2C: #FORGE_AOE_RCLICK *searchable*
+            --      -Forge used to strip all r.click actions to force r.click to start aoe targeting no matter what.
+            --      -Now we only want to start aoe targeting if there are no other meaningful actions.
+            --      -GetRightClickActions will naturally return nil in that case now.
+            --wantsaoetargeting = not isaoetargeting and self.inst.components.playercontroller:HasAOETargeting()
+
+            if isaoetargeting then
+                position = self.inst.components.playercontroller:GetAOETargetingPos()
+                spellbook = spellbook or self.inst.components.playercontroller:GetActiveSpellBook()
+            else
+                position = TheInput:GetWorldPosition()
+                target = target or TheInput:GetWorldEntityUnderMouse()
+            end
+
+            local cansee
+            if target == nil then
+                local x, y, z = position:Get()
+                cansee = _G.CanEntitySeePoint(self.inst, x, y, z)
+            else
+                cansee = target == self.inst or _G.CanEntitySeeTarget(self.inst, target)
+            end
+
+            --Check for actions in the dark
+            if not cansee then
+                local lmb = nil
+                local rmb = nil
+                if not isaoetargeting then
+                    local lmbs = self:GetLeftClickActions(position)
+                    for i, v in ipairs(lmbs) do
+                        if (v.action == ACTIONS.DROP and self.inst:GetDistanceSqToPoint(position:Get()) < 16) or
+                            v.action == ACTIONS.SET_HEADING or
+                            v.action == ACTIONS.BOAT_CANNON_SHOOT then
+
+                            lmb = v
+                        end
+                    end
+
+                    local rmbs = self:GetRightClickActions(position, nil, spellbook)
+                    for i, v in ipairs(rmbs) do
+                        if (v.action == ACTIONS.STOP_STEERING_BOAT) or
+                            v.action == ACTIONS.BOAT_CANNON_STOP_AIMING then
+                            rmb = v
+                        end
+                    end
+                end
+
+                if rmb ~= nil then
+                    for i,v in pairs(rmb) do
+                        print("[1][PlayerActionPicker]",i,v)
+                    end
+                else
+                    print("[1][PlayerActionPicker]","NONONONONON")
+                end
+                return lmb, rmb
+            end
+        end
+
+        local lmb = not isaoetargeting and self:GetLeftClickActions(position, target)[1] or nil
+        local rmb = not wantsaoetargeting and self:GetRightClickActions(position, target, spellbook)[1] or nil
+
+        --@V2C: Filtering out local UI actions that we do not really want as explicit actions.
+        --e.g. CLOSESPELLBOOK we can just [Esc] or R.Click anywhere to achieve the same thing,
+        --     so we'd rather not have the player highlighted with an action prompt.
+        --     (NOTE: We still generate these actions so that they block lower priority ones.)
+        if rmb and rmb.action == _G.ACTIONS.CLOSESPELLBOOK and rmb.target == rmb.doer then
+            rmb = nil
+        end
+
+        if rmb ~= nil then
+            for i,v in pairs(rmb) do
+                print("[2][PlayerActionPicker]",i,v)
+            end
+        else
+            print("[2][PlayerActionPicker]","NONONONONON")
+        end
+
+        return _oldDoGetMouseActions(self, position, target, spellbook)
+    end
+end)
+]]--

@@ -84,8 +84,11 @@ STRINGS.REFORGED.GAMETYPES.blossoms={name="Blooming Days",desc="Please don’t r
 STRINGS.UI.WXP_DETAILS.BLOSSOMS_WIN="Blooming Days Win"
 
 STRINGS.REFORGED.DEBUFFS.debuff_flower_dmg   = "Fever\n\n25% Damage\nTake Damage When No Attack"
-STRINGS.REFORGED.DEBUFFS.debuff_flower_def   = "Solitude\n\n25% Defense\nNo Sound\nCan't See"   ---this is cant see xc
-STRINGS.REFORGED.DEBUFFS.debuff_flower_speed = "Boldness\n\n{25}% Speed\nStop Cooldown\n{-25}% Defense"
+STRINGS.REFORGED.DEBUFFS.debuff_flower_def   = "Solitude\n\n25% Defense\nNo Sound\nCan't See"   ---this even cant see xc
+
+STRINGS.REFORGED.DEBUFFS.debuff_flower_speed         = "Boldness"
+STRINGS.REFORGED.DEBUFFS.debuff_flower_speed_DESCRIPTION = "\n\n{25}% Speed\nStop Cooldown\n{-25}% Defense"
+
 STRINGS.REFORGED.DEBUFFS.debuff_flower_regen = "Calmness\n\nHeal Slowly\nGet Long Calmless Going you Sleep"
 STRINGS.REFORGED.DEBUFFS.debuff_flower_unhit = "Absorption\n\n25% Faster Cooldown\nTurn slippery when attacking or attacked"  --바꿀떄 블로썸 파일안 AddSpice안도 바꾸기
 

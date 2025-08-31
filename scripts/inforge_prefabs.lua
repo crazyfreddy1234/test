@@ -10,6 +10,7 @@ return {
 	"inforge_blacksmithsedge",
 	"inforge_infernalstaff",
 	"inforge_firebomb",
+	"livestaff",
 
 
 	--DEBUFF--

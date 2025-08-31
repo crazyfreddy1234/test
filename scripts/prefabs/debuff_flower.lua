@@ -403,7 +403,6 @@ local function AddBuff(inst, target)
         if target.components.locomotor and target.components.buffable and target.components.combat then
 
             local stacksize = inst.components.debuff:GetCurrentStack()
-            print("STACKSIZE",stacksize)
             target.components.locomotor:SetExternalSpeedMultiplier(target, "flower_speed_buff", 1 + (inst.buffs.speed * inst.current_mult) * stacksize)
             target.components.buffable:AddBuff("flower_speedcooldown_debuff", {{name = "cooldown", val = 9999, type = "add"}})
             UpdateTargetsInventoryCooldowns(target,true)

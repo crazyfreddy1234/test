@@ -88,6 +88,8 @@ local function proj_fn()
     local inst = COMMON_FNS.BasicEntityInit("hf_roach_beetle_projectile", "butter_roach_beetle_projectile", "idle_loop", {pristine_fn = function(inst)
 	    inst.Transform:SetTwoFaced()
 		------------------------------------------
+		MakeInventoryPhysics(inst)
+		------------------------------------------
 		inst.Transform:SetScale(0.8, 0.8, 0.8)
 	end})
     ------------------------------------------

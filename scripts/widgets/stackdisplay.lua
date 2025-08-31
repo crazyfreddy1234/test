@@ -30,8 +30,6 @@ function StackDisplay:UpdateText()
 
     local stack_num = self.owner._stack_count and self.owner._stack_count:value() or nil
 
-    print("[INFORGE] UPDATE TEXT", stack_num)
-
     if stack_num ~= nil then
         self:ShowText(stack_num)
     else
@@ -40,7 +38,6 @@ function StackDisplay:UpdateText()
 end
 
 function StackDisplay:ShowText(val)
-    print("[INFORGE] SHOW ACTIVATE")
     self:Show()
 
     if val ~= nil then
@@ -51,7 +48,6 @@ function StackDisplay:ShowText(val)
 end
 
 function StackDisplay:HideText()
-    print("hide text")
     self.stacktext:SetString("")
     self:Hide()
 end

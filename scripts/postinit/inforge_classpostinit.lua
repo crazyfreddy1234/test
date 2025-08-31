@@ -110,7 +110,7 @@ end)
 local Badge         = require "widgets/badge"
 local PowerMeter    = require "widgets/test_widget"
 local SkillMeter    = require "widgets/skill_widget"
-local TeamHud       = require "widgets/skill_widget"
+--local TeamHud       = require "widgets/skill_widget"
 
 AddClassPostConstruct("widgets/statusdisplays_lavaarena", function(self)
 	self.powerwidget = self:AddChild(PowerMeter(self.owner))
@@ -127,9 +127,9 @@ AddClassPostConstruct("widgets/statusdisplays_lavaarena", function(self)
     self.skillwidget.num:Hide()  
 
 
-    self.teamhud = self:AddChild(TeamHud(self.owner))
-    self.teamhud:SetPosition(-200,-20,0)
-    self.teamhud:Show()
+    --self.teamhud = self:AddChild(TeamHud(self.owner))
+    --self.teamhud:SetPosition(-200,-20,0)
+    --self.teamhud:Show()
 end)
 
 
@@ -194,46 +194,150 @@ end)
 
 
 
+
+
+
 AddClassPostConstruct("widgets/debuff_display", function(self)
-    local _OldSetTarget = self.SetTarget
 
-    local function ApplyStackedPercents(description, stack)
-        return description:gsub("{([%-+]?%d+)}", function(num)
-            local base = _G.tonumber(num)
-            if base then
-                return _G.tostring(base * stack)
-            else
-                return num
-            end
-        end)
+    local OldSetTarget = self.SetTarget
+    local OldUpdate = self.Update
+
+    self.stack_description = {}
+    self.existing_stack_debuffs = {}
+    self.debuffstack_count = {}
+    self.stackdisplay = {}
+
+        self._onclientdebuffstackdirty = function(inst)
+        self:UpdateStackText()
     end
 
-    self._onclientdebuffstackdirty = function(inst)
-        if data ~= nil and (data.name ~= nil and STRINGS.REFORGED.DEBUFFS[data.name] ~= nil) and data.stack ~= nil then
-            local debuff_description = STRINGS.REFORGED.DEBUFFS[data.name]
-            local stack = self.debuff_stack:value()
+    function self:UpdateStackText()
+        if self.target and self.target.replica.debuffable then
+            local stackdebuff_str = self.target.stackdebuff_data:value()
+            local name, stk = string.match(stackdebuff_str, "{([^=]+)=([^}]+)}")
 
-            print(STRINGS.REFORGED.DEBUFFS[data.name])
-            print(data.stack)
+            if name == nil or stk == nil then return end
 
-            STRINGS.REFORGED.DEBUFFS[data.name] = ApplyStackedPercents(debuff_description, stack)
+            local debuff_description = name .. "_DESCRIPTION"
+            local reforge_string = STRINGS.REFORGED.DEBUFFS
+            local result = nil
+
+            if name ~= nil and stk ~= nil and reforge_string[name] ~= nil and reforge_string[debuff_description] ~= nil then
+                local str = reforge_string[debuff_description]
+
+                result = str:gsub("{(.-)}", function(number_str)
+                    local num = _G.tonumber(number_str)
+                    if num then
+                        local new_num = num * stk
+                        return _G.tostring(new_num)
+                    else
+                        return number_str
+                    end
+                end)
+
+                self.stack_description[name] = reforge_string[name] .. result
+                print("[UPDATESTACKTEXT]",self.stack_description[name])
+                self.debuffstack_count[name] = stk
+                self:Update()
+            end
         end
-        
-        self:Update()
     end
 
-    self.SetTarget = function(self, target, force_update)
-        _OldSetTarget(self, target, force_update)
+    self.Update = function(self)
+        if self.stack_description ~= nil then
+            self.existing_stack_debuffs = {}
 
-        if target and self.target == target then
-            if self.target ~= nil then
-                self.inst:RemoveEventCallback("debuff_stack_dirty", self._onclientdebuffstackdirty, self.target)
+            if self.target and self.target.replica.debuffable then
+                local debuffs = self.target.replica.debuffable:GetCurrentDebuffs()
+                local count = 0
+                local row = 1
+
+                for name,_ in pairs(debuffs) do
+                    count = count + 1
+                    row = math.ceil(count/self.debuffs_per_row)
+                    if not self.icons[count] then
+                        local Image = require "widgets/image"
+
+                        self.icons[count] = self:AddChild(Image())
+                    end
+                    local icon_info = self:GetDebuffIconInfo(name)
+                    self.icons[count]:SetTexture(icon_info.atlas, icon_info.tex)
+
+                    if self.stack_description[name] ~= nil then
+                        local DebuffStack_Display = require("widgets/debuffstack_display")
+
+                        if self.stackdisplay[name] ~= nil then
+                            self.stackdisplay[name]:Kill()
+                            self.stackdisplay[name] = nil
+                        end
+
+                        self.stackdisplay[name] = self:AddChild(DebuffStack_Display())
+                        self.stackdisplay[name]:MoveToFront()
+                        self.stackdisplay[name]:ShowText(self.debuffstack_count[name] or 1)
+
+                        self.existing_stack_debuffs[name] = true
+                        self.icons[count]:SetHoverText(self.stack_description[name])
+
+                        self.icons[count]:SetPosition((((count - 1) % self.debuffs_per_row) + 1 - 1) * (self.icon_width + self.spacing), (row - 1) * (self.icon_height + self.spacing) * (self.add_icons_top_to_bottom and -1 or 1))
+                        self.stackdisplay[name]:SetPosition( ((((count - 1) % self.debuffs_per_row) + 1 - 1) * (self.icon_width + self.spacing)) + 20 , ((row - 1) * (self.icon_height + self.spacing) * (self.add_icons_top_to_bottom and -1 or 1)) - 10 )
+                    else
+                        print("[NO self.stack_description]")
+                        self.icons[count]:SetHoverText(icon_info.hover_text)
+                        self.icons[count]:SetPosition((((count - 1) % self.debuffs_per_row) + 1 - 1) * (self.icon_width + self.spacing), (row - 1) * (self.icon_height + self.spacing) * (self.add_icons_top_to_bottom and -1 or 1))
+                    end
+
+                    
+                    self.icons[count]:Show()
+                end
+                
+                -- Hide extra icons
+                if #self.icons > count then
+                    for i = count + 1, #self.icons do
+                        self.icons[i]:Hide()
+                    end
+                end
+            else
+                print("[NO PLAYER OR DEBUFFABLE]", self.target, self.target.replica.debuffable)
+            end
+            
+            for name,_ in pairs(self.stack_description) do
+                local found = false
+                for nam, _ in pairs(self.existing_stack_debuffs) do
+                    print("[NAM]", nam)
+                    if name == nam then
+                        print("[FOUND]", name, nam)
+                        found = true
+                        break
+                    end
+                end
+
+                if not found then
+                    print("[NOT FOUND]",name,nam,self.stack_description[name])
+                    self.stack_description[name] = nil
+                    self.debuffstack_count[name] = nil
+
+                    self.stackdisplay[name]:Kill()
+                    self.stackdisplay[name] = nil
+                end
             end
 
-            self.inst:ListenForEvent("debuff_stack_dirty", self._onclientdebuffstackdirty, target)
+            print("[UPDATE DONE]")
+            
+        else
+            print("[NO STACK_DESCIPTION]")
+            OldUpdate(self)
+        end
+    end
+
+
+    self.SetTarget = function(self, target, force_update)   
+        OldSetTarget(self, target, force_update)
+         
+        if target then
+            if self.target ~= nil then
+                self.target:RemoveEventCallback("stackdebuff_update_dirty", self._onclientdebuffstackdirty)
+            end
+            target:ListenForEvent("stackdebuff_update_dirty", self._onclientdebuffstackdirty)
         end
     end
 end)
-
-
-

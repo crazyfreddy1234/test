@@ -15,23 +15,6 @@ local BOARRIOR = TUNING.FORGE.BOARRIOR
 local RHINOCEBRO = TUNING.FORGE.RHINOCEBRO
 local SWINECLOPS = TUNING.FORGE.SWINECLOPS
 
-local RPX,_W=TUNING.modfns["workshop-2038128735"],UTIL.WAVESET
-local AddReforgedPrefab = RPX.AddReforgedPrefab
-local GetReforgedSettings = RPX.GetReforgedSettings
-local GetDupeGroups = RPX.GetDupeGroups
-local GameplayHasTag = RPX.GameplayHasTag
-
-local duplicator=GetReforgedSettings("gameplay","mutators").mob_duplicator
-local ISHARD   = GameplayHasTag("difficulty","hard")
-local ISEXHARD = GameplayHasTag("difficulty","extrahard")
-
-local CROCOMMANDER = TUNING.FORGE.CROCOMMANDER
-local SNORTOISE = TUNING.FORGE.SNORTOISE
-local SCORPEON = TUNING.FORGE.SCORPEON
-local BOARRIOR = TUNING.FORGE.BOARRIOR
-local RHINOCEBRO = TUNING.FORGE.RHINOCEBRO
-local SWINECLOPS = TUNING.FORGE.SWINECLOPS
-
 local CROCOMMANDER_NECRO = TUNING.HALLOWED_FORGE.CROCOMMANDER_NECRO
 local SNORTOISE_GHOST = TUNING.HALLOWED_FORGE.SNORTOISE_GHOST
 local SCORPEON_CULTIST = TUNING.HALLOWED_FORGE.SCORPEON_CULTIST
@@ -39,6 +22,7 @@ local BOARILLA_SKELETON = TUNING.HALLOWED_FORGE.BOARILLA_SKELETON
 local BOARRIOR_SKELETON = TUNING.HALLOWED_FORGE.BOARRIOR_SKELETON
 local RHINOCEBRO_FRANKEN = TUNING.HALLOWED_FORGE.RHINOCEBRO_FRANKEN
 local SWINECLOPS_MUMMY = TUNING.HALLOWED_FORGE.SWINECLOPS_MUMMY
+local CURSED_HELMET = TUNING.HALLOWED_FORGE.CURSED_HELMET
 
 RHINOCEBRO.BUFF_DAMAGE_INCREASE = (RHINOCEBRO.BUFF_DAMAGE_INCREASE/5)
 
@@ -487,12 +471,14 @@ end
 
 			if #targets > 0 then
 				local poor_target = targets[math.random(1,#targets)]
-				local x,y,z = poor_target.Transform:GetWorldPosition()
+				
 				inst.components.combat:SetTarget(poor_target)
-				inst.components.locomotor.runspeed = inst.components.locomotor.runspeed*3
+				inst.components.locomotor.runspeed = inst.components.locomotor.runspeed * 3
 				inst:ListenForEvent("onhitother",ReturnNormalSpeed)
+
 				--inst.slam_count = inst.slam_count + 1
 				--[[
+				local x,y,z = poor_target.Transform:GetWorldPosition()
 				inst.Transform:SetPosition(x, y, z)
 				inst.sg:GoToState("body_slam")
 
@@ -511,10 +497,10 @@ end
 			if inst.teleport_timer == nil then
 				inst.teleport_timer = 0
 			end
-			inst.random_task = inst:DoPeriodicTask(1, TeleportRandomPlayer, nil)
+			inst.random_task = inst:DoPeriodicTask(1, TeleportRandomPlayer)
 		end
 		--if inst.slam_count ~= nil and (inst.slam_count > 2 or (inst._bufftype:value() == 0 and inst.isslam ~= true)) then 
-		if inst._bufftype:value() == 0 and inst.random_task ~= nil then
+		if inst._bufftype:value() == 0 then
 			_G.RemoveTask(inst.random_task)
 			inst.components.combat:ToggleAttack("guard", false)
 			inst.teleport_timer = nil
@@ -609,6 +595,61 @@ end
 	if not GameplayHasTag("difficulty","hard") then return inst end
 
 
+
+	local function launchitem(inst, item) -- TODO common fn
+		local target = inst.components.combat.target
+		local target_pos = target and target:GetPosition() or _G.TheWorld.components.lavaarenaevent:GetArenaCenterPoint() or inst:GetPosition()
+		local angle = -inst:GetAngleToPoint(target_pos:Get()) * DEGREES
+		local speed = (math.random() * 4 + 8)/2
+		angle = (angle + math.random() * 60 - 30) * DEGREES
+		item.Physics:SetVel(speed * math.cos(angle), math.random() * 2 + 8, speed * math.sin(angle))
+	end
+
+	local function DoBurst(inst)
+		if not inst.bursted then
+			inst.bursted = true
+			inst.AnimState:OverrideSymbol("body", inst.burst_build or "hf_beetletaur_mummy_bursted", "body")
+		end
+
+		local explodeBettles_amount = 0
+
+		if #AllPlayers >= 6 then
+			explodeBettles_amount = 2
+		else
+			local random = math.random()
+
+			if ((#AllPlayers)-2)*0.25 > random then
+				explodeBettles_amount = 2
+			else
+				explodeBettles_amount = 1
+			end
+		end
+
+
+		for i = 1, (inst.components.combat:GetAttackOptions("beetles").burst_amount) - explodeBettles_amount do
+			local pos = inst:GetPosition()
+			local beetle = SpawnPrefab("hf_roach_beetle_projectile")
+			beetle.duplicator_count = inst.duplicator_count -- Make sure the beetle projectile can pass the duplicator count to the Cursed Helmet mob.
+			beetle.Transform:SetPosition(pos.x, 3, pos.z)
+			launchitem(inst, beetle)
+			beetle.owner = inst
+		end
+
+		for i = 1, explodeBettles_amount do
+			local pos = inst:GetPosition()
+			local beetle = SpawnPrefab("hf_butter_roach_beetle_projectile")
+			beetle.duplicator_count = inst.duplicator_count 
+			beetle.Transform:SetPosition(pos.x, 3, pos.z)
+			launchitem(inst, beetle)
+			beetle.owner = inst
+		end
+
+		inst.components.combat:StartCooldown("beetles")
+	end
+
+	inst.components.combat.cooldown_complete_fns["beetles"] = DoBurst
+
+	inst:SetStateGraph("SGbutter_swineclops_mummy")
  end
 
  local AddCursed_Helmet=function(inst)
@@ -616,9 +657,54 @@ end
 end
 
 local AddHardCursed_Helmet=function(inst)
-	if not GameplayHasTag("difficulty","hard") then return inst end
+	if not ISHARD then return inst end 
 
-	
+
+
+	inst.components.spellmaster:EditSpell("curse", {max_targets = 999, priority = 0, target_range = 15})
+
+
+	if ISEXHARD then
+
+		inst.components.spellmaster:EnableSpell("curse", false, false)
+
+		inst.components.spellmaster:AddSpell("upgraded_curse", {"inforge_spell_upgraded_curse"}, {
+			cast_time    = 1,
+			duration     = 10,
+			range        = 1,
+			target_range = 15,
+			max_targets  = 999,
+			rotations    = 1,
+			cooldown     = 20,
+			priority     = 0,
+			magic_circle = "magic_circle_curse",
+			position_fn  = COMMON_FNS.HF.MagicCircleTrackTargetPos,
+			colour = {255/255, 58/255, 138/255}, --this is for spellcast fx, see stategraph
+		})
+
+		inst.components.spellmaster:EditSpell("revive", {priority  = 1})
+		inst.components.spellmaster:EditSpell("reanimate_corpse", {priority  = 1})
+
+		inst.components.spellmaster:EditSpell("hex_lightning", {priority  = 2})
+		inst.components.spellmaster:EditSpell("hex_storm", {priority  = 2})
+
+		inst.components.spellmaster:EditSpell("annihilation", {priority  = 3})
+		inst.components.spellmaster:EditSpell("annihilation_protection", {priority  = 2})
+
+	else
+
+		inst.components.healthtrigger:RemoveTrigger(CURSED_HELMET.PHASE_2_TRIGGER)
+
+		local function Phase2(inst)
+			_G.COMMON_FNS.ForceTaunt(inst)
+			-- Black Hole
+			inst.components.combat:ToggleAttack("black_hole", true)
+			-- Revive Linked MummyClops
+			--inst.components.spellmaster:EnableSpell("revive", true, true)
+		end
+		inst.components.healthtrigger:AddTrigger(CURSED_HELMET.PHASE_2_TRIGGER, Phase2)
+
+	end
 end
  
  AddReforgedPrefab("pitpig",AddPitpig)

@@ -254,3 +254,8 @@ AddSimPostInit(function()
 end)
 
 GLOBAL.MY_MOD_CURRENT_WORLD_NAME = nil
+
+
+
+
+
