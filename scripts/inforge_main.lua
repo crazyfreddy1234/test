@@ -1106,36 +1106,6 @@ local function IsPointInRange(player, x, z)
     return distsq(x, z, px, pz) <= 4096
 end
 
-AddModRPCHandler("Infernal_Forge_RPC", "RightClick", function(player, action, x, z, target, rotation, isreleased, controlmods, noforce, mod_name, platform, platform_relative)
-        if not (checknumber(action) and
-                checknumber(x) and
-                checknumber(z) and
-                optentity(target) and
-                optnumber(rotation) and
-                optbool(isreleased) and
-                optnumber(controlmods) and
-                optbool(noforce) and
-                optstring(mod_name) and
-				optentity(platform) and
-				checkbool(platform_relative)) then
-            printinvalid("RightClick", player)
-            return
-        end
-		local playercontroller = player.components.playercontroller
-		if playercontroller ~= nil then
-			printinvalidplatform("RightClick", player, action, x, z, platform, platform_relative)
-			x, z = ConvertPlatformRelativePositionToAbsolutePosition(x, z, platform, platform_relative)
-			if x ~= nil then
-				if IsPointInRange(player, x, z) and (rotation == nil or (rotation > -360.1 and rotation < 360.1)) then
-                    print("[Infernal_Forge_RPC rightclick]",mod_name)
-					--playercontroller:OnRemoteRightClick(action, Vector3(x, 0, z), target, rotation, isreleased, controlmods, noforce, mod_name)
-				else
-					print("Remote right click out of range")
-				end
-			end
-		end
-end)
-
 AddModRPCHandler("Infernal_Forge_RPC", "SendMousePos", function(player, x, z, mode)
     local pos = _G.Vector3(x, 0, z)
     local weapon = player.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
@@ -1226,6 +1196,12 @@ AddPlayerPostInit(function(inst)
     end
 end)
 
+local infernal_mod_name = {
+    "workshop-2961923603", -- original mod
+    "workshop-2996203358", -- beta test
+    "infernal_test"  --alpha test
+}
+
 AddComponentPostInit("playercontroller", function(self)
     local _oldOnRemoteRightClick = self.OnRemoteRightClick
 
@@ -1242,13 +1218,21 @@ AddComponentPostInit("playercontroller", function(self)
             end
             self:ClearControlMods()
 
+            local isInfernalMod = false
+
+            for _,name in pairs(infernal_mod_name) do
+                if mod_name == nil and rmb.action.mod_name == name then
+                    mod_name = rmb.action.mod_name
+                    isInfernalMod = true
+                end
+            end
+
+            if isInfernalMod == false then
+                _oldOnRemoteRightClick(self, actioncode, position, target, rotation, isreleased, controlmodscode, noforce, mod_name)
+            end
+
             print("[before rmb]",rmb.action.code,actioncode,",,,",rmb.action.mod_name,mod_name)
-            if rmb.action.code ~= actioncode then
-                actioncode = rmb.action.code
-            end
-            if rmb.action.mod_name ~= mod_name then
-                mod_name = rmb.action.mod_name
-            end
+
             if rmb ~= nil and rmb.action.code == actioncode and rmb.action.mod_name == mod_name then
                 print("[rmb]", rmb.action.code, rmb.action.mod_name)
                 if rmb.action.canforce and not noforce then
