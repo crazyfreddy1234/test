@@ -355,7 +355,7 @@ local function fn()
 	inst.healing_mode = _G.net_bool(inst.GUID, "livestaff.healing_mode", "healing_mode_dirty") -- is caster doing heal mode
 	inst.healing_mode:set(false)
 
-	if not _G.TheNet:IsDedicated() then
+	if not TheWorld.ismastersim then
 		inst:ListenForEvent("healing_mode_dirty",function(inst)
 			if inst.healing_mode:value() == true then
 				OnStartChanneling_Client(inst, true) -- true means healing
@@ -381,7 +381,7 @@ local function fn()
 	inst.dealing_mode = _G.net_bool(inst.GUID, "livestaff.dealing_mode", "dealing_mode_dirty") -- is caster doing dealing mode
 	inst.dealing_mode:set(false)
 
-	if not _G.TheNet:IsDedicated() then
+	if not TheWorld.ismastersim then
 		inst:ListenForEvent("dealing_mode_dirty",function(inst)
 			if inst.dealing_mode:value() == true then
 				OnStartChanneling_Client(inst, false) -- false means dealing

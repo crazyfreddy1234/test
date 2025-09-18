@@ -724,7 +724,7 @@ AddComponentPostInit("rechargeable", function(self)
 
     self.inst:AddTag("multi_recharge")
 
-	-- ✅ 스택 상태 초기화
+	-- 스택 상태 초기화
 	self.max_stacks = 2
     self.current_stacks = self.max_stacks
     self.recharge_queue = {}
@@ -1053,7 +1053,7 @@ AddAction(change_staff_mode)
 
 
 
-AddComponentAction("POINT", "inventoryitem", function(inst, doer, pos, actions, right, target)
+AddComponentAction("POINT", "channelcastable", function(inst, doer, pos, actions, right, target)
     if right then
         if doer.Inforge_Skill_Key:value() == "nil" then
             if inst:HasTag("startchaneeling") then
@@ -1077,34 +1077,47 @@ end)
 AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.START_CHANNEL_HEALING, "start_channelcast_inforge"))
 AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.START_CHANNEL_HEALING, "start_channelcast_inforge"))
 
-AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.STOP_CHANNEL_HEALING, "doshortaction"))
-AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.STOP_CHANNEL_HEALING, "doshortaction"))
+AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.STOP_CHANNEL_HEALING, "stop_channelcast_inforge"))
+AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.STOP_CHANNEL_HEALING, "stop_channelcast_inforge"))
 
-AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.CASTSPELL_LIVESTAFF, "doshortaction"))
-AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.CASTSPELL_LIVESTAFF, "doshortaction"))
+AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.CASTSPELL_LIVESTAFF, "castspellmind_inforge"))
+AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.CASTSPELL_LIVESTAFF, "castspellmind_inforge"))
 
-local function printinvalidplatform(rpcname, player, action, relative_x, relative_z, platform, platform_relative)
-	if platform_relative and platform == nil then
-		local player_pt = player ~= nil and player:GetPosition() or Vector3(math.huge, math.huge, math.huge)
-		print(string.format("FAILED TO FIND PLATFORM IN RPC: %s, Action: %s, Player: %s (%0.2f, %0.2f), Playform Offset: %0.2f, %0.2f (len: %0.2f)", rpcname, tostring(action), tostring(player), player_pt.x, player_pt.z, relative_x, relative_z, VecUtil_Length(relative_x, relative_z)))
-	end
+
+
+
+local function DecodePressedControls()
+    -- Shift
+    return _G.TheInput:IsControlPressed(_G.CONTROL_FORCE_TRADE) and 2 or
+    -- Ctrl
+    _G.TheInput:IsControlPressed(_G.CONTROL_FORCE_ATTACK) and 3 or
+    -- Alt
+    _G.TheInput:IsControlPressed(_G.CONTROL_FORCE_INSPECT) and 4 or
+    -- None
+    1
 end
 
-local function ConvertPlatformRelativePositionToAbsolutePosition(relative_x, relative_z, platform, platform_relative)
-    if platform_relative then
-		if platform == nil then
-			return
-		end
-		local y
-		relative_x, y, relative_z = platform.entity:LocalToWorldSpace(relative_x, 0, relative_z)
-	end
-    return relative_x, relative_z
+
+
+local _oldCastAOE = _G.ACTIONS.CASTAOE.fn
+_G.ACTIONS.CASTAOE.fn = function(act)
+
+    if act.doer ~= nil and act.invobject and act.invobject.multiple_castaoe then
+        for _,action in pairs(act.invobject.multiple_castaoe) do
+            act.invobject:RemoveTag(action)
+        end
+        act.invobject:AddTag(act.invobject.multiple_castaoe[DecodePressedControls()])
+    end
+
+
+    if OldCastAOE ~= nil then
+        return OldCastAOE(act)
+    end
 end
 
-local function IsPointInRange(player, x, z)
-    local px, py, pz = player.Transform:GetWorldPosition()
-    return distsq(x, z, px, pz) <= 4096
-end
+
+
+
 
 AddModRPCHandler("Infernal_Forge_RPC", "SendMousePos", function(player, x, z, mode)
     local pos = _G.Vector3(x, 0, z)
@@ -1247,6 +1260,238 @@ AddComponentPostInit("playercontroller", function(self)
                 --print("Remote right click action failed: "..tostring(ACTION_IDS[actioncode]))
             end
         end
+    end
+end)
+
+
+
+AddComponentPostInit("projectile",function(self)
+    self.distance_traveled = 0
+	local old_OnUpdate = self.OnUpdate
+
+
+	local function CheckForTargets(self, inst, check_walls)
+		local current_pos = self.inst:GetPosition()
+		current_pos.y = 0
+		-- Get valid targets near the projectile
+		local valid_targets = {}
+		local target = nil
+		local x, y, z = current_pos:Get()
+        local ignore_targets = self.inst:HasTag("inf_onlyhitteammate") and _G.COMMON_FNS.GetEnemyTags(self.attacker) or _G.COMMON_FNS.CommonExcludeTags(self.attacker)
+		local ents = TheSim:FindEntities(x, y, z, 3, check_walls and {"wall"}, ignore_targets) -- TODO check hit radius throughout this function
+		for _,ent in ipairs(ents) do
+			-- The owner/attacker is not a valid target.
+			if ent.entity:IsValid() and ent.entity:IsVisible() and ent.components.health and not ent.components.health:IsDead() and not (ent == self.attacker or ent == self.owner) and ent.components.combat then
+				local hit_range = ent:GetPhysicsRadius(0) + self.hitdist
+				local current_range = _G.distsq(current_pos, ent:GetPosition())
+				if hit_range > current_range then
+					table.insert(valid_targets, {target = ent, hit_range = hit_range, current_range = current_range})
+				end
+			end
+		end
+		-- Check if any valid target is within hit range? TODO check this
+		for _,data in pairs(valid_targets) do
+			if not target or data.current_range - data.hit_range < target.range then
+				target = {ent = data.target, range = data.current_range - data.hit_range}
+				break
+			end
+		end
+		if target then -- TODO can't we call this inside that for loop and return?
+			--print("Hit Target: " .. tostring(target.ent))
+			if target.ent then
+				if target.ent.OnProjectileHit then
+					target.ent.OnProjectileHit(inst) -- Custom projectile hit for wall
+				else
+					self:Hit(target.ent)
+				end
+			end
+		end
+	end
+
+	function self:OnUpdate(dt)
+		if self.aimed_throw or self.dropped then
+			local current_pos = self.inst:GetPosition()
+			current_pos.y = 0
+			-- Check if max range has been reached
+			if self.aimed_throw and self.range and _G.distsq(self.start, current_pos) > self.range * self.range or self.dropped and self.life_fn and self.life_fn(self.inst) then
+				self:Miss()
+			else
+				CheckForTargets(self, inst)
+			end
+		else
+		    -- Update distance traveled
+		    if self.range ~= nil then
+		        self.distance_traveled = (self.distance_traveled or 0) + math.sqrt(_G.distsq(self.last_position, self.inst:GetPosition()))
+		        self.last_position = self.inst:GetPosition()
+		        -- Updating the start position so the original OnUpdate does not need to manually overwritten.
+		        self.start = self.last_position + _G.Vector3(1,0,0) * self.distance_traveled
+		    end
+			old_OnUpdate(self, dt)
+			if self.attacker then
+				CheckForTargets(self, inst, true)
+			end
+		end
+	end
+end)
+
+
+AddComponentPostInit("combat",function(self)
+    local _oldCanHitTarget = self.CanHitTarget
+
+    self.CanHitTarget = function(self, target, weapon)
+        if self.inst ~= nil and
+            self.inst:IsValid() and
+            target ~= nil and
+            target:IsValid() and
+            not target:IsInLimbo() and
+            (   self:CanExtinguishTarget(target, weapon) or
+                self:CanLightTarget(target, weapon) or
+                (   target.components.combat ~= nil and
+                    target.components.combat:CanBeAttacked(self.inst)
+                )
+            ) then
+
+            local targetpos = target:GetPosition()
+            -- V2C: this is 3D distsq
+            local pos = self.temppos or self.inst:GetPosition()
+            if self.ignorehitrange or _G.distsq(targetpos, pos) <= self:CalcHitRangeSq(target) then
+                print("can hit","true")
+                return true
+            elseif weapon ~= nil and weapon.components.projectile ~= nil then
+                local range = target:GetPhysicsRadius(0) + weapon.components.projectile.hitdist
+                -- V2C: this is 3D distsq
+                print("range weapon","true or false")
+                return _G.distsq(targetpos, weapon:GetPosition()) <= range * range
+            end
+        end
+        print("cant hit","false")
+        return false
+    end
+end)
+
+AddComponentPostInit("combat_replica",function(self)
+    local _oldIsValidTarget = self.IsValidTarget
+    local _oldCanBeAttacked = self.CanBeAttacked
+
+    self.IsValidTarget = function(self, target)
+        if target == nil or
+            target == self.inst or
+            not (target.entity:IsValid() and target.entity:IsVisible()) then
+            return false
+        end
+
+        local weapon = self:GetWeapon()
+        return self:CanExtinguishTarget(target, weapon)
+            or self:CanLightTarget(target, weapon)
+            or (target.replica.combat ~= nil and
+                not IsEntityDead(target, true) and
+                not target:HasTag("spawnprotection") and
+                not (target:HasTag("shadow") and self.inst.replica.sanity == nil and not self.inst:HasTag("crazy")) and
+                not (target:HasTag("playerghost") and (self.inst.replica.sanity == nil or self.inst.replica.sanity:IsSane()) and not self.inst:HasTag("crazy")) and
+                (not self.inst:HasTag("birchnutroot") or not (target:HasTag("birchnutroot") or target:HasTag("birchnut") or target:HasTag("birchnutdrake"))) and
+                (TheNet:GetPVPEnabled() or not (self.inst:HasTag("player") and target:HasTag("player")) or (weapon ~= nil and weapon:HasTag("inf_canattackplayer"))) and
+                target:GetPosition().y <= self._attackrange:value())
+    end
+
+    self.CanBeAttacked = function(self, attacker)
+        print(attacker,self.inst)
+        if self.inst:HasTag("playerghost") or
+            self.inst:HasTag("flight") or
+            (	not self.temp_iframes_keep_aggro and
+                (	self.inst:HasTag("noattack") or
+                    self.inst:HasTag("invisible")
+                )
+            )
+        then
+            --Can't be attacked by anyone
+            print("Can't be attacked by anyone","false")
+            return false
+        end
+
+        local sanity
+
+        if attacker ~= nil then
+            --Attacker checks
+            if self.inst:HasTag("birchnutdrake")
+                and (attacker:HasTag("birchnutdrake") or
+                    attacker:HasTag("birchnutroot") or
+                    attacker:HasTag("birchnut")) then
+                --Birchnut check
+                print("Birchnut","false")
+                return false
+            elseif self.inst:HasTag("noplayertarget") and attacker:HasTag("player") then
+                --Can't be attacked by players
+                print("players","false")
+                return false
+            elseif attacker ~= self.inst and self.inst:HasTag("player") then
+                --Player target check
+                if not TheNet:GetPVPEnabled() and attacker:HasTag("player") then
+                    --PVP check
+                    local combat = attacker.replica.combat
+                    local weapon = combat ~= nil and combat:GetWeapon() or nil
+                    if weapon == nil or not weapon:HasTag("inf_canattackplayer") then
+                        --Allow friendly fire with props
+                        print("friendly fire","false")
+                        return false
+                    end
+                end
+                if self._target:value() ~= attacker then
+                    local follower = attacker.replica.follower
+                    if follower ~= nil then
+                        local leader = follower:GetLeader()
+                        if leader ~= nil and
+                            leader ~= self._target:value() and
+                            leader:HasTag("player") then
+                            local combat = attacker.replica.combat
+                            if combat ~= nil and combat:GetTarget() ~= self.inst then
+                                --Follower check
+                                print("Follower","false")
+                                return false
+                            end
+                        end
+                    end
+                end
+            end
+
+            sanity = attacker.replica.sanity
+
+            if sanity ~= nil and sanity:IsCrazy() or attacker:HasTag("crazy") then
+                --Insane attacker can pretty much attack anything
+                print("Insane","true")
+                return true
+            end
+        end
+
+        if self.inst:HasAnyTag("shadowcreature", "nightmarecreature") and
+            (	self._target:value() == nil
+                --[[or (--See if we're targeting someone else, and attacker isn't insane enough to help
+                    attacker ~= nil and
+                    sanity ~= nil and --set already in the above attacker ~= nil block
+                    self._target:value() ~= attacker and
+                    not (sanity:IsInsanityMode() and sanity:GetPercent() < .5)
+                    )]]
+                --V2C: The above version is the correct design; we should never have
+                --     allowed targeting invisible entities.
+                --     TODO: Add/improve items for revealing shadow creatures so we
+                --           can switch to that version.
+                or (--See if we're targeting someone else, but not actually hostile to them
+                    attacker ~= nil and
+                    self._target:value() ~= attacker and
+                    (self.inst.HostileToPlayerTest ~= nil and not self.inst:HostileToPlayerTest(self._target:value()))
+                    )
+            ) and
+            --Allow AOE damage on stationary shadows like Unseen Hands
+            (attacker ~= nil or self.inst:HasTag("locomotor")) then
+            --Not insane attacker cannot attack shadow creatures
+            --(unless shadow creature is targeting attacker, or targeting
+            -- someone else, and attacker is below 50% sanity to help out)
+            print("locomotor","false")
+            return false
+        end
+
+        --Passed all checks, can be attacked by anyone
+        print("can be attacked","true")
+        return true
     end
 end)
 

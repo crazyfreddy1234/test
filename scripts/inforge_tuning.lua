@@ -80,6 +80,29 @@ local INFORGED_TUNING = {
 		WEIGHT            = 10,
 	},
 	
+	HEALINGDART = {
+		DAMAGE       = 25,
+		ALT_DAMAGE   = 50,
+		ALT_HEAL     = 50,
+		COOLDOWN     = 18,
+		DAMAGE_TYPE  = 1, -- Physical
+		ITEM_TYPE    = "darts",
+		ENTITY_TYPE  = "WEAPONS",
+		ATTACK_RANGE = 10,
+		HIT_RANGE    = 15,
+		ALT_RANGE    = 30,
+		ALT_STIMULI  = "explosive",
+		WEIGHT       = 2,
+		RET = {
+			TYPE   = "directional",
+			LENGTH = 6.5,
+			ICONS  = {
+				{atlas = "images/rf_alt_icons.xml", tex = "alt_portal_activate.tex"},
+				{atlas = "images/rf_alt_icons.xml", tex = "alt_portal_target.tex"},
+			},
+		},
+	},
+
 }
 
 return INFORGED_TUNING

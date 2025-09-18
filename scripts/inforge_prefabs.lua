@@ -11,6 +11,7 @@ return {
 	"inforge_infernalstaff",
 	"inforge_firebomb",
 	"livestaff",
+	"healingdart",
 
 
 	--DEBUFF--
