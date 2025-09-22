@@ -1084,19 +1084,45 @@ AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.CASTSPEL
 AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.CASTSPELL_LIVESTAFF, "castspellmind_inforge"))
 
 
-
-
-local function DecodePressedControls()
-    -- Shift
-    return _G.TheInput:IsControlPressed(_G.CONTROL_FORCE_TRADE) and 2 or
-    -- Ctrl
-    _G.TheInput:IsControlPressed(_G.CONTROL_FORCE_ATTACK) and 3 or
-    -- Alt
-    _G.TheInput:IsControlPressed(_G.CONTROL_FORCE_INSPECT) and 4 or
-    -- None
-    1
+local function CheckTags(obj, tags, cant_have)
+	for _,tag in pairs(tags or {}) do
+		if not cant_have and not obj:HasTag(tag) then
+			return false
+		elseif cant_have and obj:HasTag(tag) then
+			return false
+		end
+	end
+	return true
 end
 
+local function GetState(obj, states, action)
+	if not obj then return states.default end
+
+    if obj.multiple_castaoe then
+        for _,mul_action in pairs(obj.multiple_castaoe) do
+            obj:RemoveTag(mul_action)
+        end
+        
+        if action.options and action.options.ctrl then
+            print(obj.multiple_castaoe[action.options.ctrl])
+            obj:AddTag(obj.multiple_castaoe[action.options.ctrl])
+        end
+    end
+
+	for index,info in pairs(states) do
+		if index ~= "default" and CheckTags(obj, info.must_tags) and CheckTags(obj, info.cant_tags, true) then
+			return info.state
+		end
+	end
+	return states.default
+end
+
+local function AltActionHandler(inst, action)
+	return GetState(action.invobject, _G.TUNING.FORGE.CASTAOE_TAG_TO_STATE, action)
+end
+
+AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.CASTAOE, AltActionHandler))
+AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.CASTAOE, AltActionHandler))
 
 
 local _oldCastAOE = _G.ACTIONS.CASTAOE.fn
@@ -1104,14 +1130,17 @@ _G.ACTIONS.CASTAOE.fn = function(act)
 
     if act.doer ~= nil and act.invobject and act.invobject.multiple_castaoe then
         for _,action in pairs(act.invobject.multiple_castaoe) do
+            print(action)
             act.invobject:RemoveTag(action)
         end
-        act.invobject:AddTag(act.invobject.multiple_castaoe[DecodePressedControls()])
+
+        if act.options and act.options.ctrl then
+            act.invobject:AddTag(act.invobject.multiple_castaoe[act.options.ctrl])
+        end
     end
 
-
-    if OldCastAOE ~= nil then
-        return OldCastAOE(act)
+    if _oldCastAOE ~= nil then
+        return _oldCastAOE(act)
     end
 end
 
