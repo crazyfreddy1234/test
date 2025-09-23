@@ -84,6 +84,12 @@ local function fn()
 	local inst = COMMON_FNS.EQUIPMENT.CommonWeaponFN("blowdart_lava2", nil, weapon_values, tuning_values)
     ------------------------------------------
     inst.multiple_castaoe = {"blowdart","throw_line","blowdart","blowdart"}
+    inst.multiple_reticule = {
+        {type = "directional", ping_prefab = "reticulelongping",length = 6.5},
+        {type = "aoe",         ping_prefab = "reticuleaoesmallhostiletarget"},
+        {type = "directional", ping_prefab = "reticulelongping",length = 6.5},
+        {type = "directional", ping_prefab = "reticulelongping",length = 6.5}
+    }
 	------------------------------------------
     if not TheWorld.ismastersim then
         return inst

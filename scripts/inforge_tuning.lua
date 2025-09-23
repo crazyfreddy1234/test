@@ -100,6 +100,9 @@ local INFORGED_TUNING = {
 				{atlas = "images/rf_alt_icons.xml", tex = "alt_portal_activate.tex"},
 				{atlas = "images/rf_alt_icons.xml", tex = "alt_portal_target.tex"},
 			},
+			AOE_PING = "reticuleaoesmallhostiletarget",
+			DIR_PING = "reticulelongping", -- dont need it, but im put this for later.
+			
 		},
 	},
 

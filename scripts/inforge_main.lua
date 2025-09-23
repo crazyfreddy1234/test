@@ -1168,6 +1168,40 @@ CASTAOE_TAG_TUNING[13] = {
 }
 ]]--
 
+
+
+local function AOEReticuleInit(inst, radius, reticule_prefab, ping_prefab, valid_color, valid_colors, invalid_color)
+	inst:AddComponent("aoetargeting")
+     -- TODO tuning?
+
+
+    --[[
+    inst.components.aoetargeting.reticule.reticuleprefab = reticule_prefab or "reticuleaoe"
+    inst.components.aoetargeting.reticule.pingprefab = reticule_prefab and reticule_prefab.."ping" or "reticuleaoeping"
+    inst.components.aoetargeting.reticule.targetfn = AOEReticuleTargetFn(radius) -- TODO or default of 7?
+    inst.components.aoetargeting.reticule.validcolour = valid_color or { 1, .75, 0, 1 } -- TODO tuning?
+    inst.components.aoetargeting.reticule.invalidcolour = invalid_color or { .5, 0, 0, 1 } -- TODO tuning?
+    inst.components.aoetargeting.reticule.ease = true
+    inst.components.aoetargeting.reticule.mouseenabled = true
+    ]]--
+end
+
+
+
+local function DirectionalReticuleInit(inst, length, reticule_prefab, ping_prefab, always_valid)
+	inst:AddComponent("aoetargeting")
+	
+
+    --[[
+    inst.components.aoetargeting.reticule.reticuleprefab = reticule_prefab or "reticulelong"
+	inst.components.aoetargeting.reticule.targetfn = DirectionalReticuleTargetFn(length) -- TODO or default of 6.5?
+	inst.components.aoetargeting.reticule.validcolour = { 1, .75, 0, 1 }
+    inst.components.aoetargeting.reticule.invalidcolour = { .5, 0, 0, 1 }
+    inst.components.aoetargeting.reticule.ease = true
+    inst.components.aoetargeting.reticule.mouseenabled = true
+    ]]--
+end
+
 local INFORGE_STATES = require("inforge_state")
 
 for _, state in ipairs(INFORGE_STATES.CLIENT_STATES) do
@@ -1199,7 +1233,7 @@ local KEY_NAMES = {
 -- 1. 서버에서 RPC 받는 부분
 ------------------------------------------------
 AddModRPCHandler("Infernal_Forge_RPC", "SkillKeyState", function(player, keyname, state)
-    -- keyname : SHIFT, CTRL, ALT
+    -- keyname : SHIFT, CTRL, ALT, nil
     -- STATE   : up, down
 
     if state == "down" then
@@ -1215,14 +1249,89 @@ end)
 -- 2. 클라이언트에서 입력 감지
 ------------------------------------------------
 
+local function AOEReticuleTargetFn(radius)
+	return function ()
+		local player = ThePlayer
+		local ground = TheWorld.Map
+		local pos = Vector3()
+		--Cast range is 8, leave room for error
+		--4 is the aoe range
+		for r = radius, 0, -.25 do
+			pos.x, pos.y, pos.z = player.entity:LocalToWorldSpace(r, 0, 0)
+			if ground:IsPassableAtPoint(pos:Get()) and not ground:IsGroundTargetBlocked(pos) then
+				return pos
+			end
+		end
+		return pos
+	end
+end
+
+local function ReticuleUpdatePositionFn(inst, pos, reticule, ease, smoothing, dt)
+    local x, y, z = inst.Transform:GetWorldPosition()
+    reticule.Transform:SetPosition(x, 0, z)
+    local rot = -math.atan2(pos.z - z, pos.x - x) / DEGREES
+    if ease and dt ~= nil then
+        local rot0 = reticule.Transform:GetRotation()
+        local drot = rot - rot0
+        rot = Lerp((drot > 180 and rot0 + 360) or (drot < -180 and rot0 - 360) or rot0, rot, dt * smoothing)
+    end
+    reticule.Transform:SetRotation(rot)
+end
+
+local function ReticuleMouseTargetFn(length)
+    return function (inst, mousepos)
+		if mousepos ~= nil then
+			local x, y, z = inst.Transform:GetWorldPosition()
+			local dx = mousepos.x - x
+			local dz = mousepos.z - z
+			local l = dx * dx + dz * dz
+			if l <= 0 then
+				return inst.components.reticule.targetpos
+			end
+			l = length / math.sqrt(l) * (ThePlayer.replica.scaler and ThePlayer.replica.scaler:GetScale() or 1)
+			return Vector3(x + dx * l, 0, z + dz * l)
+		end
+	end
+end
+
+local SKILLKEY = {
+    ["nil"]   = 1,
+    ["SHIFT"] = 2,
+    ["CTRL"]  = 3,
+    ["ALT"]   = 4
+}
+
+local function ChangeReticule(player, data)
+    local handitem = player.components.inventory and player.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS) or nil
+    if player.components.playercontroller and handitem and handitem.multiple_reticule then
+
+        local skill_key = SKILLKEY[player.Inforge_Skill_Key:value()]
+        local retucule_type  = skill_key and handitem.multiple_reticule[skill_key] or nil
+
+        if retucule_type then
+            if retucule_type.type == "directional" and retucule_type.ping_prefab then
+                handitem.components.aoetargeting.reticule.pingprefab = retucule_type.ping_prefab or "reticulelongping"  --dir
+                handitem.components.aoetargeting.reticule.mousetargetfn = ReticuleMouseTargetFn(retucule_type.length or 6.5)
+                inst.components.aoetargeting.reticule.updatepositionfn = ReticuleUpdatePositionFn
+            elseif retucule_type.type == "aoe" and retucule_type.ping_prefab then
+                handitem.components.aoetargeting.targetprefab = retucule_type.ping_prefab or "reticuleaoehostiletarget" --aoe
+                handitem.components.aoetargeting.reticule.mousetargetfn = nil
+                inst.components.aoetargeting.reticule.updatepositionfn = nil
+            end
+        end
+
+        
+
+        
+    end
+end
+
 AddPlayerPostInit(function(inst)
     inst.Inforge_Skill_Key = _G.net_string(inst.GUID, "Inforge_Skill_Key", "Inforge_Skill_Key_dirty")
 
     inst.Inforge_Skill_Key:set("nil")
 
-    inst:ListenForEvent("actionfailed",function(inst, data)
-        print(data.action,data.reason)
-    end)
+    inst:ListenForEvent("Inforge_Skill_Key_dirty", ChangeReticule)
 
     if not TheNet:IsDedicated() then
         TheInput:AddKeyHandler(function(key, down)
