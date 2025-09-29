@@ -1216,6 +1216,7 @@ end)
 ------------------------------------------------
 
 local function AOEReticuleTargetFn(radius)
+    print("AOEReticuleTargetFn",radius)
 	return function ()
 		local player = _G.ThePlayer
 		local ground = _G.TheWorld.Map
@@ -1245,6 +1246,7 @@ local function ReticuleUpdatePositionFn(inst, pos, reticule, ease, smoothing, dt
 end
 
 local function ReticuleMouseTargetFn(length)
+    print("ReticuleMouseTargetFn",length)
     return function (inst, mousepos)
 		if mousepos ~= nil then
 			local x, y, z = inst.Transform:GetWorldPosition()
@@ -1261,6 +1263,7 @@ local function ReticuleMouseTargetFn(length)
 end
 
 local function DirectionalReticuleTargetFn(length)
+    print("DirectionalReticuleTargetFn",length)
     return function ()
 		return _G.Vector3(_G.ThePlayer.entity:LocalToWorldSpace(length * (_G.ThePlayer.replica.scaler and _G.ThePlayer.replica.scaler:GetScale() or 1), 0, 0))
 	end
@@ -1291,8 +1294,11 @@ local function ChangeReticule(player)
             elseif retucule_type.type == "aoe" then
                 handitem.components.aoetargeting.targetprefab = retucule_type.pingprefab or "reticuleaoehostiletarget" --aoe               
                 handitem.components.aoetargeting.reticule.pingprefab = retucule_type.pingprefab or "reticuleaoeping"
+                handitem.components.aoetargeting.reticule.mousetargetfn = nil
+                handitem.components.aoetargeting.reticule.updatepositionfn = nil
                 handitem.components.aoetargeting.reticule.targetfn = AOEReticuleTargetFn(retucule_type.length or 7) 
                 handitem.components.aoetargeting.reticule.reticuleprefab = retucule_type.reticuleprefab or "reticuleaoe"
+                handitem.components.aoetargeting.reticule.invalidcolour = { .5, 0, 0, 1 } -- TODO tuning?
             end
             handitem.components.aoetargeting.reticule.validcolour = retucule_type.validcolor or { 1, .75, 0, 1 } 
             handitem.components.aoetargeting.reticule.invalidcolour = retucule_type.invalidcolor or { .5, 0, 0, 1 } 
@@ -1301,10 +1307,8 @@ local function ChangeReticule(player)
         end
 
         if handitem.components.reticule ~= nil then 
-            handitem:RemoveComponent("reticule")
-            handitem:AddComponent("reticule")
             for k, v in pairs(handitem.components.aoetargeting.reticule) do
-                handitem.components.reticule[k] = nil
+                print(k,v)
                 handitem.components.reticule[k] = v
             end
         end
