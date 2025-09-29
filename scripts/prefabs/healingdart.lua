@@ -85,10 +85,10 @@ local function fn()
     ------------------------------------------
     inst.multiple_castaoe = {"blowdart","throw_line","blowdart","blowdart"}
     inst.multiple_reticule = {
-        {type = "directional", ping_prefab = "reticulelongping",length = 6.5},
-        {type = "aoe",         ping_prefab = "reticuleaoesmallhostiletarget"},
-        {type = "directional", ping_prefab = "reticulelongping",length = 6.5},
-        {type = "directional", ping_prefab = "reticulelongping",length = 6.5}
+        {type = "directional", pingprefab = "reticulelongping",              reticuleprefab = "reticulelong",     length = 6.5, validcolor = {0, 1, .5, 1}, invalidcolor = {0, .4, 0, 1}},
+        {type = "aoe",         pingprefab = "reticuleaoesmallhostiletarget", reticuleprefab = "reticuleaoesmall", length = 5  , validcolor = {0, 1, .5, 1}, invalidcolor = {0, .4, 0, 1}},
+        {type = "directional", pingprefab = "reticulelongping",              reticuleprefab = "reticulelong",     length = 6.5, validcolor = {0, 1, .5, 1}, invalidcolor = {0, .4, 0, 1}},
+        {type = "directional", pingprefab = "reticulelongping",              reticuleprefab = "reticulelong",     length = 6.5, validcolor = {0, 1, .5, 1}, invalidcolor = {0, .4, 0, 1}}
     }
 	------------------------------------------
     if not TheWorld.ismastersim then

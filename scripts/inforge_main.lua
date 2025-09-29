@@ -1168,40 +1168,6 @@ CASTAOE_TAG_TUNING[13] = {
 }
 ]]--
 
-
-
-local function AOEReticuleInit(inst, radius, reticule_prefab, ping_prefab, valid_color, valid_colors, invalid_color)
-	inst:AddComponent("aoetargeting")
-     -- TODO tuning?
-
-
-    --[[
-    inst.components.aoetargeting.reticule.reticuleprefab = reticule_prefab or "reticuleaoe"
-    inst.components.aoetargeting.reticule.pingprefab = reticule_prefab and reticule_prefab.."ping" or "reticuleaoeping"
-    inst.components.aoetargeting.reticule.targetfn = AOEReticuleTargetFn(radius) -- TODO or default of 7?
-    inst.components.aoetargeting.reticule.validcolour = valid_color or { 1, .75, 0, 1 } -- TODO tuning?
-    inst.components.aoetargeting.reticule.invalidcolour = invalid_color or { .5, 0, 0, 1 } -- TODO tuning?
-    inst.components.aoetargeting.reticule.ease = true
-    inst.components.aoetargeting.reticule.mouseenabled = true
-    ]]--
-end
-
-
-
-local function DirectionalReticuleInit(inst, length, reticule_prefab, ping_prefab, always_valid)
-	inst:AddComponent("aoetargeting")
-	
-
-    --[[
-    inst.components.aoetargeting.reticule.reticuleprefab = reticule_prefab or "reticulelong"
-	inst.components.aoetargeting.reticule.targetfn = DirectionalReticuleTargetFn(length) -- TODO or default of 6.5?
-	inst.components.aoetargeting.reticule.validcolour = { 1, .75, 0, 1 }
-    inst.components.aoetargeting.reticule.invalidcolour = { .5, 0, 0, 1 }
-    inst.components.aoetargeting.reticule.ease = true
-    inst.components.aoetargeting.reticule.mouseenabled = true
-    ]]--
-end
-
 local INFORGE_STATES = require("inforge_state")
 
 for _, state in ipairs(INFORGE_STATES.CLIENT_STATES) do
@@ -1251,8 +1217,8 @@ end)
 
 local function AOEReticuleTargetFn(radius)
 	return function ()
-		local player = ThePlayer
-		local ground = TheWorld.Map
+		local player = _G.ThePlayer
+		local ground = _G.TheWorld.Map
 		local pos = Vector3()
 		--Cast range is 8, leave room for error
 		--4 is the aoe range
@@ -1269,7 +1235,7 @@ end
 local function ReticuleUpdatePositionFn(inst, pos, reticule, ease, smoothing, dt)
     local x, y, z = inst.Transform:GetWorldPosition()
     reticule.Transform:SetPosition(x, 0, z)
-    local rot = -math.atan2(pos.z - z, pos.x - x) / DEGREES
+    local rot = -math.atan2(pos.z - z, pos.x - x) / _G.DEGREES
     if ease and dt ~= nil then
         local rot0 = reticule.Transform:GetRotation()
         local drot = rot - rot0
@@ -1288,9 +1254,15 @@ local function ReticuleMouseTargetFn(length)
 			if l <= 0 then
 				return inst.components.reticule.targetpos
 			end
-			l = length / math.sqrt(l) * (ThePlayer.replica.scaler and ThePlayer.replica.scaler:GetScale() or 1)
-			return Vector3(x + dx * l, 0, z + dz * l)
+			l = length / math.sqrt(l) * (_G.ThePlayer.replica.scaler and _G.ThePlayer.replica.scaler:GetScale() or 1)
+			return _G.Vector3(x + dx * l, 0, z + dz * l)
 		end
+	end
+end
+
+local function DirectionalReticuleTargetFn(length)
+    return function ()
+		return _G.Vector3(_G.ThePlayer.entity:LocalToWorldSpace(length * (_G.ThePlayer.replica.scaler and _G.ThePlayer.replica.scaler:GetScale() or 1), 0, 0))
 	end
 end
 
@@ -1301,30 +1273,67 @@ local SKILLKEY = {
     ["ALT"]   = 4
 }
 
-local function ChangeReticule(player, data)
-    local handitem = player.components.inventory and player.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS) or nil
-    if player.components.playercontroller and handitem and handitem.multiple_reticule then
+local function ChangeReticule(player)
+    local handitem = player and player.components.inventory and player.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS) or nil
+    print(player.Inforge_Skill_Key:value())
+    if player.components.playercontroller and handitem and handitem.components.aoetargeting and handitem.multiple_reticule then
 
         local skill_key = SKILLKEY[player.Inforge_Skill_Key:value()]
         local retucule_type  = skill_key and handitem.multiple_reticule[skill_key] or nil
 
         if retucule_type then
-            if retucule_type.type == "directional" and retucule_type.ping_prefab then
-                handitem.components.aoetargeting.reticule.pingprefab = retucule_type.ping_prefab or "reticulelongping"  --dir
+            if retucule_type.type == "directional" then
+                handitem.components.aoetargeting.reticule.pingprefab = retucule_type.pingprefab or "reticulelongping"  --dir
                 handitem.components.aoetargeting.reticule.mousetargetfn = ReticuleMouseTargetFn(retucule_type.length or 6.5)
-                inst.components.aoetargeting.reticule.updatepositionfn = ReticuleUpdatePositionFn
-            elseif retucule_type.type == "aoe" and retucule_type.ping_prefab then
-                handitem.components.aoetargeting.targetprefab = retucule_type.ping_prefab or "reticuleaoehostiletarget" --aoe
-                handitem.components.aoetargeting.reticule.mousetargetfn = nil
-                inst.components.aoetargeting.reticule.updatepositionfn = nil
+                handitem.components.aoetargeting.reticule.updatepositionfn = ReticuleUpdatePositionFn
+                handitem.components.aoetargeting.reticule.targetfn = DirectionalReticuleTargetFn(retucule_type.length or 6.5)
+                handitem.components.aoetargeting.reticule.reticuleprefab = retucule_type.reticuleprefab or "reticulelong"
+            elseif retucule_type.type == "aoe" then
+                handitem.components.aoetargeting.targetprefab = retucule_type.pingprefab or "reticuleaoehostiletarget" --aoe               
+                handitem.components.aoetargeting.reticule.pingprefab = retucule_type.pingprefab or "reticuleaoeping"
+                handitem.components.aoetargeting.reticule.targetfn = AOEReticuleTargetFn(retucule_type.length or 7) 
+                handitem.components.aoetargeting.reticule.reticuleprefab = retucule_type.reticuleprefab or "reticuleaoe"
             end
+            handitem.components.aoetargeting.reticule.validcolour = retucule_type.validcolor or { 1, .75, 0, 1 } 
+            handitem.components.aoetargeting.reticule.invalidcolour = retucule_type.invalidcolor or { .5, 0, 0, 1 } 
+            handitem.components.aoetargeting.reticule.ease = true
+            handitem.components.aoetargeting.reticule.mouseenabled = true
         end
 
+        if handitem.components.reticule ~= nil then 
+            handitem:RemoveComponent("reticule")
+            handitem:AddComponent("reticule")
+            for k, v in pairs(handitem.components.aoetargeting.reticule) do
+                handitem.components.reticule[k] = nil
+                handitem.components.reticule[k] = v
+            end
+        end
         
-
-        
+        if _G.ThePlayer == player then
+            player.components.playercontroller:RefreshReticule(handitem)
+        end
     end
 end
+
+AddComponentPostInit("aoetargeting",function(self)
+    local _oldStartTargeting = self.StartTargeting
+
+    self.StartTargeting = function(self)
+        if self.inst.components.reticule == nil then
+            local owner = _G.ThePlayer
+            if owner.components.playercontroller ~= nil then
+                local inventoryitem = self.inst.replica.inventoryitem
+                if inventoryitem ~= nil and inventoryitem:IsGrandOwner(owner) then
+                    self.inst:AddComponent("reticule")
+                    for k, v in pairs(self.reticule) do
+                        self.inst.components.reticule[k] = v
+                    end
+                    owner.components.playercontroller:RefreshReticule(self.inst)
+                end
+            end
+        end
+    end
+end)
 
 AddPlayerPostInit(function(inst)
     inst.Inforge_Skill_Key = _G.net_string(inst.GUID, "Inforge_Skill_Key", "Inforge_Skill_Key_dirty")
