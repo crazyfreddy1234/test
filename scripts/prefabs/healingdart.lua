@@ -25,11 +25,17 @@ local assets_projectile = {
     Asset("ANIM", "anim/lavaarena_blowdart_attacks.zip"),
 }
 local prefabs = {
-    "firebomb_projectile",
     "healingdart_projectile",
     "healingdart_projectile_explosive",
     "reticulelong",
     "reticulelongping",
+    
+    "firebomb_projectile",
+    "firebomb_proc_fx",
+    "firebomb_sparks",
+    "reticuleaoesmall",
+    "reticuleaoesmallping",
+    "reticuleaoesmallhostiletarget",
 }
 local prefabs_projectile = {
     "weaponsparks_piercing_fx",

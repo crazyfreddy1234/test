@@ -985,13 +985,6 @@ AddComponentPostInit("playercontroller",function(self)
         end
 
         self.actionholdtime = _G.GetTime()
-
-        local act = self:GetRightMouseAction()
-        if act == nil then
-            print("[OnRightClick]","act is nil")
-        else
-            print("[OnRightClick]",act.action.code,act.action.mod_name,act.action.code)
-        end
         
 
         Old_OnRightClick(self, down)
@@ -1002,7 +995,6 @@ local start_healing = _G.Action({priority = 10, distance = 20})
 start_healing.str = "Start Healing"
 start_healing.id = "START_CHANNEL_HEALING"
 start_healing.fn = function(act)
-    print("activate healing")
     if act.doer and act.doer.components.channelcaster then
 		if act.invobject == nil then
 			--off-hand channel casting
@@ -1104,7 +1096,6 @@ local function GetState(obj, states, action)
         end
         
         if action.options and action.options.ctrl then
-            print(obj.multiple_castaoe[action.options.ctrl])
             obj:AddTag(obj.multiple_castaoe[action.options.ctrl])
         end
     end
@@ -1127,20 +1118,21 @@ AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.CASTAOE,
 
 local _oldCastAOE = _G.ACTIONS.CASTAOE.fn
 _G.ACTIONS.CASTAOE.fn = function(act)
+    local act_pos = act:GetActionPoint()
+    if act.invobject ~= nil and act.invobject.components.aoespell ~= nil and act.invobject.components.aoespell:CanCast(act.doer, act_pos) then
 
-    if act.doer ~= nil and act.invobject and act.invobject.multiple_castaoe then
-        for _,action in pairs(act.invobject.multiple_castaoe) do
-            print(action)
-            act.invobject:RemoveTag(action)
+        if act.doer ~= nil and act.invobject and act.invobject.multiple_castaoe then
+            for _,action in pairs(act.invobject.multiple_castaoe) do
+                act.invobject:RemoveTag(action)
+            end
+
+            if act.options and act.options.ctrl then
+                act.invobject:AddTag(act.invobject.multiple_castaoe[act.options.ctrl])
+            end
         end
 
-        if act.options and act.options.ctrl then
-            act.invobject:AddTag(act.invobject.multiple_castaoe[act.options.ctrl])
-        end
-    end
-
-    if _oldCastAOE ~= nil then
-        return _oldCastAOE(act)
+        act.invobject.components.aoespell:CastSpell(act.doer, act_pos, act.options)
+        return true
     end
 end
 
@@ -1216,7 +1208,6 @@ end)
 ------------------------------------------------
 
 local function AOEReticuleTargetFn(radius)
-    print("AOEReticuleTargetFn",radius)
 	return function ()
 		local player = _G.ThePlayer
 		local ground = _G.TheWorld.Map
@@ -1246,7 +1237,6 @@ local function ReticuleUpdatePositionFn(inst, pos, reticule, ease, smoothing, dt
 end
 
 local function ReticuleMouseTargetFn(length)
-    print("ReticuleMouseTargetFn",length)
     return function (inst, mousepos)
 		if mousepos ~= nil then
 			local x, y, z = inst.Transform:GetWorldPosition()
@@ -1263,7 +1253,6 @@ local function ReticuleMouseTargetFn(length)
 end
 
 local function DirectionalReticuleTargetFn(length)
-    print("DirectionalReticuleTargetFn",length)
     return function ()
 		return _G.Vector3(_G.ThePlayer.entity:LocalToWorldSpace(length * (_G.ThePlayer.replica.scaler and _G.ThePlayer.replica.scaler:GetScale() or 1), 0, 0))
 	end
@@ -1278,14 +1267,16 @@ local SKILLKEY = {
 
 local function ChangeReticule(player)
     local handitem = player and player.components.inventory and player.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS) or nil
-    print(player.Inforge_Skill_Key:value())
     if player.components.playercontroller and handitem and handitem.components.aoetargeting and handitem.multiple_reticule then
 
         local skill_key = SKILLKEY[player.Inforge_Skill_Key:value()]
+        print("ChangeReticule",skill_key)
         local retucule_type  = skill_key and handitem.multiple_reticule[skill_key] or nil
 
         if retucule_type then
             if retucule_type.type == "directional" then
+                handitem.mustaoe = nil
+
                 handitem.components.aoetargeting.reticule.pingprefab = retucule_type.pingprefab or "reticulelongping"  --dir
                 handitem.components.aoetargeting.reticule.mousetargetfn = ReticuleMouseTargetFn(retucule_type.length or 6.5)
                 handitem.components.aoetargeting.reticule.updatepositionfn = ReticuleUpdatePositionFn
@@ -1294,11 +1285,8 @@ local function ChangeReticule(player)
             elseif retucule_type.type == "aoe" then
                 handitem.components.aoetargeting.targetprefab = retucule_type.pingprefab or "reticuleaoehostiletarget" --aoe               
                 handitem.components.aoetargeting.reticule.pingprefab = retucule_type.pingprefab or "reticuleaoeping"
-                handitem.components.aoetargeting.reticule.mousetargetfn = nil
-                handitem.components.aoetargeting.reticule.updatepositionfn = nil
                 handitem.components.aoetargeting.reticule.targetfn = AOEReticuleTargetFn(retucule_type.length or 7) 
                 handitem.components.aoetargeting.reticule.reticuleprefab = retucule_type.reticuleprefab or "reticuleaoe"
-                handitem.components.aoetargeting.reticule.invalidcolour = { .5, 0, 0, 1 } -- TODO tuning?
             end
             handitem.components.aoetargeting.reticule.validcolour = retucule_type.validcolor or { 1, .75, 0, 1 } 
             handitem.components.aoetargeting.reticule.invalidcolour = retucule_type.invalidcolor or { .5, 0, 0, 1 } 
@@ -1307,9 +1295,18 @@ local function ChangeReticule(player)
         end
 
         if handitem.components.reticule ~= nil then 
+            handitem.mustaoe = nil
             for k, v in pairs(handitem.components.aoetargeting.reticule) do
-                print(k,v)
                 handitem.components.reticule[k] = v
+            end
+
+            if retucule_type.type == "aoe" then
+                handitem.components.reticule.mousetargetfn = nil
+                handitem.components.reticule.updatepositionfn = nil
+            end
+        else 
+            if retucule_type.type == "aoe" then
+                handitem.mustaoe = true
             end
         end
         
@@ -1318,6 +1315,15 @@ local function ChangeReticule(player)
         end
     end
 end
+
+AddComponentPostInit("playercontroller",function(self)
+    local _oldTryAOETargeting = self.TryAOETargeting
+
+    self.TryAOETargeting = function(self)
+        print("TryAOETargeting")
+        return _oldTryAOETargeting(self)
+    end
+end)
 
 AddComponentPostInit("aoetargeting",function(self)
     local _oldStartTargeting = self.StartTargeting
@@ -1331,6 +1337,11 @@ AddComponentPostInit("aoetargeting",function(self)
                     self.inst:AddComponent("reticule")
                     for k, v in pairs(self.reticule) do
                         self.inst.components.reticule[k] = v
+                    end
+                    if self.inst.mustaoe then   
+                        self.inst.components.reticule.mousetargetfn = nil
+                        self.inst.components.reticule.updatepositionfn = nil
+                        self.inst.mustaoe = nil
                     end
                     owner.components.playercontroller:RefreshReticule(self.inst)
                 end
@@ -1370,7 +1381,6 @@ AddComponentPostInit("playercontroller", function(self)
     local _oldOnRemoteRightClick = self.OnRemoteRightClick
 
     self.OnRemoteRightClick = function(self, actioncode, position, target, rotation, isreleased, controlmodscode, noforce, mod_name)
-        print("[OnRemoteRightClick]",actioncode, position, target, rotation, isreleased, controlmodscode, noforce, mod_name, self.ismastersim, self:IsEnabled(), self.handler)
         if self.ismastersim and self:IsEnabled() and self.handler == nil then
             self.remote_controls[_G.CONTROL_SECONDARY] = 0
             self:DecodeControlMods(controlmodscode)
@@ -1395,10 +1405,8 @@ AddComponentPostInit("playercontroller", function(self)
                 _oldOnRemoteRightClick(self, actioncode, position, target, rotation, isreleased, controlmodscode, noforce, mod_name)
             end
 
-            print("[before rmb]",rmb.action.code,actioncode,",,,",rmb.action.mod_name,mod_name)
 
             if rmb ~= nil and rmb.action.code == actioncode and rmb.action.mod_name == mod_name then
-                print("[rmb]", rmb.action.code, rmb.action.mod_name)
                 if rmb.action.canforce and not noforce then
                     rmb:SetActionPoint(self:GetRemotePredictPosition() or self.inst:GetPosition())
                     rmb.forced = true
@@ -1506,16 +1514,13 @@ AddComponentPostInit("combat",function(self)
             -- V2C: this is 3D distsq
             local pos = self.temppos or self.inst:GetPosition()
             if self.ignorehitrange or _G.distsq(targetpos, pos) <= self:CalcHitRangeSq(target) then
-                print("can hit","true")
                 return true
             elseif weapon ~= nil and weapon.components.projectile ~= nil then
                 local range = target:GetPhysicsRadius(0) + weapon.components.projectile.hitdist
                 -- V2C: this is 3D distsq
-                print("range weapon","true or false")
                 return _G.distsq(targetpos, weapon:GetPosition()) <= range * range
             end
         end
-        print("cant hit","false")
         return false
     end
 end)
@@ -1545,7 +1550,6 @@ AddComponentPostInit("combat_replica",function(self)
     end
 
     self.CanBeAttacked = function(self, attacker)
-        print(attacker,self.inst)
         if self.inst:HasTag("playerghost") or
             self.inst:HasTag("flight") or
             (	not self.temp_iframes_keep_aggro and
@@ -1555,7 +1559,6 @@ AddComponentPostInit("combat_replica",function(self)
             )
         then
             --Can't be attacked by anyone
-            print("Can't be attacked by anyone","false")
             return false
         end
 
@@ -1568,11 +1571,9 @@ AddComponentPostInit("combat_replica",function(self)
                     attacker:HasTag("birchnutroot") or
                     attacker:HasTag("birchnut")) then
                 --Birchnut check
-                print("Birchnut","false")
                 return false
             elseif self.inst:HasTag("noplayertarget") and attacker:HasTag("player") then
                 --Can't be attacked by players
-                print("players","false")
                 return false
             elseif attacker ~= self.inst and self.inst:HasTag("player") then
                 --Player target check
@@ -1582,7 +1583,6 @@ AddComponentPostInit("combat_replica",function(self)
                     local weapon = combat ~= nil and combat:GetWeapon() or nil
                     if weapon == nil or not weapon:HasTag("inf_canattackplayer") then
                         --Allow friendly fire with props
-                        print("friendly fire","false")
                         return false
                     end
                 end
@@ -1608,7 +1608,6 @@ AddComponentPostInit("combat_replica",function(self)
 
             if sanity ~= nil and sanity:IsCrazy() or attacker:HasTag("crazy") then
                 --Insane attacker can pretty much attack anything
-                print("Insane","true")
                 return true
             end
         end
@@ -1636,12 +1635,10 @@ AddComponentPostInit("combat_replica",function(self)
             --Not insane attacker cannot attack shadow creatures
             --(unless shadow creature is targeting attacker, or targeting
             -- someone else, and attacker is below 50% sanity to help out)
-            print("locomotor","false")
             return false
         end
 
         --Passed all checks, can be attacked by anyone
-        print("can be attacked","true")
         return true
     end
 end)
