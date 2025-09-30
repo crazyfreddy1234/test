@@ -179,6 +179,7 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
             self.stackdisplay = self.root:AddChild(StackDisplay(self.owner, equipped))
             self.stackdisplay:MoveToFront()
             self.owner.stackdisplay = self.stackdisplay
+            self.owner.stackdisplay:HideText()
         end
     end)
 end)

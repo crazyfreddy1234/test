@@ -93,6 +93,7 @@ local INFORGED_TUNING = {
 		ALT_RANGE    = 30,
 		ALT_STIMULI  = "explosive",
 		WEIGHT       = 2,
+		ABILITIES    = 2,
 		RET = {
 			TYPE   = "directional",
 			LENGTH = 6.5,

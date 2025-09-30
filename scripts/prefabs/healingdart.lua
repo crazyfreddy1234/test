@@ -73,7 +73,7 @@ end
 local function PristineFN(inst)
     COMMON_FNS.AddTags(inst, "blowdart", "sharp")
     ------------------------------------------
-    inst.ability_strings = {"HEALING_DART", "HEALING_BOMB"}
+    inst.ability_strings = {"HEALING_DART", "HEALING_BOMB", "HEALING_DART", "HEALING_DART"}
     ------------------------------------------
     inst.projectiledelay = PROJECTILE_DELAY
 end
@@ -89,17 +89,21 @@ local weapon_values = {
 local function fn()
 	local inst = COMMON_FNS.EQUIPMENT.CommonWeaponFN("blowdart_lava2", nil, weapon_values, tuning_values)
     ------------------------------------------
-    inst.multiple_castaoe = {"blowdart","throw_line","blowdart","blowdart"}
+    inst.normalattack_tag = "blowdart" ---this is for normal attack animation. since attack animation working by tag.
+                                       ---if you dont write this, weapon's normal animation will be changed by tags.
+    inst.multiple_castaoe = {"blowdart","throw_line","blowdart","blowdart"} -- 1-none, 2-shift, 3-ctrl, 4-alt
     inst.multiple_reticule = {
         {type = "directional", pingprefab = "reticulelongping",              reticuleprefab = "reticulelong",     length = 6.5, validcolor = {0, 1, .5, 1}, invalidcolor = {0, .4, 0, 1}},
         {type = "aoe",         pingprefab = "reticuleaoesmallhostiletarget", reticuleprefab = "reticuleaoesmall", length = 5  , validcolor = {0, 1, .5, 1}, invalidcolor = {0, .4, 0, 1}},
         {type = "directional", pingprefab = "reticulelongping",              reticuleprefab = "reticulelong",     length = 6.5, validcolor = {0, 1, .5, 1}, invalidcolor = {0, .4, 0, 1}},
         {type = "directional", pingprefab = "reticulelongping",              reticuleprefab = "reticulelong",     length = 6.5, validcolor = {0, 1, .5, 1}, invalidcolor = {0, .4, 0, 1}}
-    }
+    } -- 1,2,3,4 -- same as castaoe
 	------------------------------------------
     if not TheWorld.ismastersim then
         return inst
     end
+    ------------------------------------------
+    inst.components.rechargeable:SetMaxStack(2)
 	------------------------------------------
     return inst
 end
@@ -232,6 +236,6 @@ local function projectileexplosivefn()
     return commonprojectilefn("attack_4_large", "_large", true)
 end
 --------------------------------------------------------------------------
-return ForgePrefab("healingdart", fn, assets, prefabs, nil, tuning_values.ENTITY_TYPE, nil, "images/inventoryimages.xml", "blowdart_lava2.tex", "swap_blowdart_lava2", "common_hand"),
+return ForgePrefab("healingdart", fn, assets, prefabs, nil, tuning_values.ENTITY_TYPE, "INFORGE", "images/inventoryimages.xml", "blowdart_lava2.tex", "swap_blowdart_lava2", "common_hand"),
     Prefab("healingdart_projectile", projectilefn, assets_projectile, prefabs_projectile),
     Prefab("healingdart_projectile_explosive", projectileexplosivefn, assets_projectile, prefabs_projectile_explosive)

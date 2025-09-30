@@ -8,7 +8,6 @@ local StackDisplay = Class(Widget, function(self, owner, weapon)
     self:SetPosition(-60, -10)    ------(-12,-474)-----
 
     self.owner = owner
-    self.temp_value = "?"
     self.equip_weapon = weapon
 
     self.stacktext = self:AddChild(Text(NUMBERFONT, 45))
@@ -27,28 +26,30 @@ local StackDisplay = Class(Widget, function(self, owner, weapon)
 end)
 
 function StackDisplay:UpdateText()
-
     local stack_num = self.owner._stack_count and self.owner._stack_count:value() or nil
 
-    if stack_num ~= nil then
-        self:ShowText(stack_num)
-    else
+    if stack_num == nil or stack_num <= -1 then
         self:HideText()
+    else
+        self:SetText(stack_num)
+        self:ShowText()
     end
 end
 
-function StackDisplay:ShowText(val)
-    self:Show()
-
-    if val ~= nil then
-        self.stacktext:SetString(val)
+function StackDisplay:SetText(text)
+    if text == nil or not (type(text) == "number" or type(text) == "string")   then
+        print("STACKDISPLAY ERROR: ERROR TEXT")
+        self.stacktext:SetString("ERROR")
     else
-        self.stacktext:SetString(self.temp_value)
+        self.stacktext:SetString(text)
     end
+end
+
+function StackDisplay:ShowText()
+    self:Show()
 end
 
 function StackDisplay:HideText()
-    self.stacktext:SetString("")
     self:Hide()
 end
 

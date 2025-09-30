@@ -537,9 +537,9 @@ AddPlayerPostInit(function(inst)
 
 
 
-    inst._stack_count = _G.net_smallbyte(inst.GUID, "inf.stack", "inf_stackdirty")
+    inst._stack_count = _G.net_shortint(inst.GUID, "inf.stack", "inf_stackdirty")
     inst._Update_Stack = _G.net_bool(inst.GUID, "inf.updatestac", "inf_updatestackdirty")
-    inst._stack_count:set(0)
+    inst._stack_count:set(-1)  ---- -1 is not a normal number. it means there is no stack in this weapon. So display will be disappear
 
     local function CheckFinishRecharge(inst, data)
         if data.stack and data.owner then
@@ -558,27 +558,23 @@ AddPlayerPostInit(function(inst)
         else
             inst:AddTag("RDPS")
         end
-
-
-
-
-        if inst and inst.stackdisplay ~= nil then
-            inst.stackdisplay:UpdateText()
-        end
     ----------------------------------------------------------------------
 
         inst:DoTaskInTime(0,function()
+            if data ~= nil and data.item ~= nil 
+            and data.item.components.rechargeable ~= nil and data.item.components.rechargeable:GetMaxStack() < 2 then
+                if inst and inst.stackdisplay ~= nil then
+                    inst._stack_count:set(-1)
+                    return
+                end
+            end
+
             if not (data.item.components.equippable and data.item.components.equippable.equipslot == _G.EQUIPSLOTS.HANDS) then
                 return
             end
 
-            if data ~= nil and data.item ~= nil 
-            and data.item.components.rechargeable ~= nil and data.item.components.rechargeable:GetMaxStack() < 2 then
-
-                if inst and inst.stackdisplay ~= nil then
-                    inst.stackdisplay:HideText()
-                    return
-                end
+            if inst and inst.stackdisplay ~= nil then
+                inst.stackdisplay:UpdateText()
             end
 
             if inst and inst:IsValid() and inst._stack_count ~= nil
@@ -724,9 +720,9 @@ AddComponentPostInit("rechargeable", function(self)
 
     self.inst:AddTag("multi_recharge")
 
-	-- 스택 상태 초기화
-	self.max_stacks = 2
-    self.current_stacks = self.max_stacks
+	-- 
+	self.max_stacks = 1
+    self.current_stacks = 1
     self.recharge_queue = {}
     self.inforge_owner = nil
 
@@ -735,7 +731,6 @@ AddComponentPostInit("rechargeable", function(self)
     local Old_StartRecharge = self.StartRecharge
     self.StartRecharge = function(self)
         if self.max_stacks ~= nil and self.max_stacks > 1 then
-
             self.inst:DoTaskInTime(0,function()
                 if not (self.isready or self.pickup) and self.charge_count > 0 then
                     local charge_data = table.remove(self.charge_priority, 1)
@@ -747,7 +742,7 @@ AddComponentPostInit("rechargeable", function(self)
                     self.isready = false
                 end
 
-                if self.inst.components.aoetargeting and self.current_stacks <= 0 then
+                if self.inst.components.aoetargeting and (self.current_stacks <= 0 or self.pickup) then
                     self.inst.components.aoetargeting:SetEnabled(false)
                 end
 
@@ -764,12 +759,10 @@ AddComponentPostInit("rechargeable", function(self)
                     self:RecalculateRate()
 
                     self.inst:DoTaskInTime(0, function()
-
                         self.inst.replica.inventoryitem:SetChargeTime(self:GetRechargeTime())
                         self.inst:PushEvent("rechargechange", { percent = self.recharge and self.recharge / 180, overtime = false })
                         _G.RemoveTask(self.updatetask)
                         self.updatetask = self.inst:DoPeriodicTask(_G.FRAMES, function() self:Update() end)
-
                     end)
 
                 else
@@ -825,6 +818,7 @@ AddComponentPostInit("rechargeable", function(self)
 
     function self:SetMaxStack(stack)
         self.max_stacks = stack
+        self.current_stacks = stack
     end
 
     function self:GetMaxStack() 
@@ -836,15 +830,12 @@ AddComponentPostInit("rechargeable", function(self)
     end
 
 
+
     local function UseChargeFn(inst, data)
         self:UseCharge()
     end
 
-
-
-
     self.inst:ListenForEvent("equipped", function(inst, data)
-
         self.inforge_owner = data.owner
 
         self.inforge_owner:ListenForEvent("spell_complete",UseChargeFn)
@@ -1076,6 +1067,7 @@ AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.CASTSPEL
 AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.CASTSPELL_LIVESTAFF, "castspellmind_inforge"))
 
 
+-------------------------------------------------ADD TAGS FOR MULTIPLE RETICLUE-----------------------------------
 local function CheckTags(obj, tags, cant_have)
 	for _,tag in pairs(tags or {}) do
 		if not cant_have and not obj:HasTag(tag) then
@@ -1116,6 +1108,26 @@ AddStategraphActionHandler("wilson",        _G.ActionHandler(_G.ACTIONS.CASTAOE,
 AddStategraphActionHandler("wilson_client", _G.ActionHandler(_G.ACTIONS.CASTAOE, AltActionHandler))
 
 
+AddPlayerPostInit(function(inst)
+    local function CheckTagsForAttack(inst, data)
+        local weapon = data.weapon or nil 
+        local attack_tag = weapon and weapon.normalattack_tag or nil
+        
+        if weapon and attack_tag and (not weapon:HasTag(attack_tag)) then
+            if weapon.multiple_castaoe then
+                for _, v in pairs(weapon.multiple_castaoe) do
+                    weapon:RemoveTag(v)   -- REMOVE ALL AOE TAGS. for safety
+                end
+            end
+            weapon:AddTag(attack_tag)  -- add normal attack animation.
+        end
+    end
+
+    inst:ListenForEvent("spell_complete", CheckTagsForAttack)
+end)
+---------------------------------------------------------------------------------------------------------
+
+--[[
 local _oldCastAOE = _G.ACTIONS.CASTAOE.fn
 _G.ACTIONS.CASTAOE.fn = function(act)
     local act_pos = act:GetActionPoint()
@@ -1135,7 +1147,7 @@ _G.ACTIONS.CASTAOE.fn = function(act)
         return true
     end
 end
-
+]]--
 
 
 
@@ -1270,26 +1282,27 @@ local function ChangeReticule(player)
     if player.components.playercontroller and handitem and handitem.components.aoetargeting and handitem.multiple_reticule then
 
         local skill_key = SKILLKEY[player.Inforge_Skill_Key:value()]
-        print("ChangeReticule",skill_key)
-        local retucule_type  = skill_key and handitem.multiple_reticule[skill_key] or nil
+        local retucule_info  = skill_key and handitem.multiple_reticule[skill_key] or nil
 
-        if retucule_type then
-            if retucule_type.type == "directional" then
+        if retucule_info then
+            if retucule_info.type == "directional" then
                 handitem.mustaoe = nil
 
-                handitem.components.aoetargeting.reticule.pingprefab = retucule_type.pingprefab or "reticulelongping"  --dir
-                handitem.components.aoetargeting.reticule.mousetargetfn = ReticuleMouseTargetFn(retucule_type.length or 6.5)
+                handitem.components.aoetargeting:SetAlwaysValid(retucule_info.alwaysvalid or true)
+                handitem.components.aoetargeting.reticule.pingprefab = retucule_info.pingprefab or "reticulelongping"  --dir
+                handitem.components.aoetargeting.reticule.mousetargetfn = ReticuleMouseTargetFn(retucule_info.length or 6.5)
                 handitem.components.aoetargeting.reticule.updatepositionfn = ReticuleUpdatePositionFn
-                handitem.components.aoetargeting.reticule.targetfn = DirectionalReticuleTargetFn(retucule_type.length or 6.5)
-                handitem.components.aoetargeting.reticule.reticuleprefab = retucule_type.reticuleprefab or "reticulelong"
-            elseif retucule_type.type == "aoe" then
-                handitem.components.aoetargeting.targetprefab = retucule_type.pingprefab or "reticuleaoehostiletarget" --aoe               
-                handitem.components.aoetargeting.reticule.pingprefab = retucule_type.pingprefab or "reticuleaoeping"
-                handitem.components.aoetargeting.reticule.targetfn = AOEReticuleTargetFn(retucule_type.length or 7) 
-                handitem.components.aoetargeting.reticule.reticuleprefab = retucule_type.reticuleprefab or "reticuleaoe"
+                handitem.components.aoetargeting.reticule.targetfn = DirectionalReticuleTargetFn(retucule_info.length or 6.5)
+                handitem.components.aoetargeting.reticule.reticuleprefab = retucule_info.reticuleprefab or "reticulelong"
+            elseif retucule_info.type == "aoe" then
+                handitem.components.aoetargeting:SetAlwaysValid(retucule_info.alwaysvalid or false)
+                handitem.components.aoetargeting.targetprefab = retucule_info.pingprefab or "reticuleaoehostiletarget" --aoe               
+                handitem.components.aoetargeting.reticule.pingprefab = retucule_info.pingprefab and retucule_info.pingprefab.."ping" or "reticuleaoeping"
+                handitem.components.aoetargeting.reticule.targetfn = AOEReticuleTargetFn(retucule_info.length or 7) 
+                handitem.components.aoetargeting.reticule.reticuleprefab = retucule_info.reticuleprefab or "reticuleaoe"
             end
-            handitem.components.aoetargeting.reticule.validcolour = retucule_type.validcolor or { 1, .75, 0, 1 } 
-            handitem.components.aoetargeting.reticule.invalidcolour = retucule_type.invalidcolor or { .5, 0, 0, 1 } 
+            handitem.components.aoetargeting.reticule.validcolour = retucule_info.validcolor or { 1, .75, 0, 1 } 
+            handitem.components.aoetargeting.reticule.invalidcolour = retucule_info.invalidcolor or { .5, 0, 0, 1 } 
             handitem.components.aoetargeting.reticule.ease = true
             handitem.components.aoetargeting.reticule.mouseenabled = true
         end
@@ -1300,15 +1313,17 @@ local function ChangeReticule(player)
                 handitem.components.reticule[k] = v
             end
 
-            if retucule_type.type == "aoe" then
+            if retucule_info.type == "aoe" then
                 handitem.components.reticule.mousetargetfn = nil
                 handitem.components.reticule.updatepositionfn = nil
             end
         else 
-            if retucule_type.type == "aoe" then
+            if retucule_info.type == "aoe" then
                 handitem.mustaoe = true
             end
         end
+
+        handitem.isfirstAOE = false
         
         if _G.ThePlayer == player then
             player.components.playercontroller:RefreshReticule(handitem)
@@ -1337,6 +1352,9 @@ AddComponentPostInit("aoetargeting",function(self)
                     self.inst:AddComponent("reticule")
                     for k, v in pairs(self.reticule) do
                         self.inst.components.reticule[k] = v
+                    end
+                    if self.inst.isfirstAOE == nil and self.inst.multiple_reticule then
+                        ChangeReticule(owner)
                     end
                     if self.inst.mustaoe then   
                         self.inst.components.reticule.mousetargetfn = nil
