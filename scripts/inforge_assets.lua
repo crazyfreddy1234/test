@@ -16,6 +16,8 @@ return {
     Asset("ANIM", "anim/def_flower_fx.zip"),
     Asset("ANIM", "anim/butter_roach_beetle_build.zip"),
     Asset("ANIM", "anim/butter_roach_beetle_projectile.zip"),
+    Asset("ANIM", "anim/blowdart_green.zip"),
+    Asset("ANIM", "anim/swap_blowdart_green.zip"),
 
     Asset("ATLAS", "images/debuff_flower_def.xml"),
     Asset("ATLAS", "images/debuff_flower_regen.xml"),
@@ -44,6 +46,9 @@ return {
 
     Asset("ATLAS", "images/lotus.xml"), --lotus_flower
     Asset("IMAGE", "images/lotus.tex"),
+
+    Asset("ATLAS", "images/blowdart_green.xml"), 
+    Asset("IMAGE", "images/blowdart_green.tex"),
 
 
 

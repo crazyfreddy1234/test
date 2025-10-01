@@ -1,25 +1,14 @@
---[[
-Copyright (C) 2018 Forged Forge
 
-This file is part of Forged Forge.
-
-The source code of this program is shared under the RECEX
-SHARED SOURCE LICENSE (version 1.0).
-The source code is shared for referrence and academic purposes
-with the hope that people can read and learn from it. This is not
-Free and Open Source software, and code is not redistributable
-without permission of the author. Read the RECEX SHARED
-SOURCE LICENSE for details
-The source codes does not come with any warranty including
-the implied warranty of merchandise.
-You should have received a copy of the RECEX SHARED SOURCE
-LICENSE in the form of a LICENSE file in the root of the source
-directory. If not, please refer to
-<https://raw.githubusercontent.com/Recex/Licenses/master/SharedSourceLicense/LICENSE.txt>
-]]
 local assets = {
-    Asset("ANIM", "anim/blowdart_lava2.zip"),
-    Asset("ANIM", "anim/swap_blowdart_lava2.zip"),
+    Asset("ANIM", "anim/blowdart_green.zip"),
+    Asset("ANIM", "anim/swap_blowdart_green.zip"),
+}
+local bomb_assets_fx = {
+    Asset("ANIM", "anim/lavaarena_firebomb.zip"),
+}
+local bomb_prefabs_projectile={
+    "firebomb_explosion",
+    "firehit",
 }
 local assets_projectile = {
     Asset("ANIM", "anim/lavaarena_blowdart_attacks.zip"),
@@ -50,7 +39,7 @@ local tuning_values = TUNING.INFORGE.HEALINGDART
 --------------------------------------------------------------------------
 local function MoltenBolt(inst, caster, pos, options)
     if options.ctrl and options.ctrl == 2 then
-        local projectile = SpawnPrefab("firebomb_projectile")
+        local projectile = SpawnPrefab("healingbomb_projectile")
         projectile.Transform:SetPosition(inst:GetPosition():Get())
         projectile.owner = caster
         projectile.components.complexprojectile:Launch(pos, caster, inst, caster.components.combat:CalcDamage(nil, inst, nil, true, nil, tuning_values.ALT_STIMULI), true)--print(tostring(ThePlayer.components.combat:CalcDamage(nil, inst, nil, true)))
@@ -79,15 +68,15 @@ local function PristineFN(inst)
 end
 --------------------------------------------------------------------------
 local weapon_values = {
-    name_override = "blowdart_lava2",
-    swap_strings  = {"swap_blowdart_lava2"},
+    name_override = "blowdart_green",
+    swap_strings  = {"swap_blowdart_green"},
 	projectile    = "healingdart_projectile",
 	AOESpell      = MoltenBolt,
     pristine_fn   = PristineFN,
 }
 --------------------------------------------------------------------------
 local function fn()
-	local inst = COMMON_FNS.EQUIPMENT.CommonWeaponFN("blowdart_lava2", nil, weapon_values, tuning_values)
+	local inst = COMMON_FNS.EQUIPMENT.CommonWeaponFN("blowdart_green", nil, weapon_values, tuning_values)
     ------------------------------------------
     inst.normalattack_tag = "blowdart" ---this is for normal attack animation. since attack animation working by tag.
                                        ---if you dont write this, weapon's normal animation will be changed by tags.
@@ -104,6 +93,9 @@ local function fn()
     end
     ------------------------------------------
     inst.components.rechargeable:SetMaxStack(2)
+    ------------------------------------------
+    inst.components.inventoryitem.imagename = "blowdart_green"
+	inst.components.inventoryitem.atlasname = "images/blowdart_green.xml"
 	------------------------------------------
     return inst
 end
@@ -211,11 +203,11 @@ local function commonprojectilefn(anim, tail_suffix, alt)
         end
         ------------------------------------------
         if alt then
-            inst._fade = net_tinybyte(inst.GUID, "blowdart_lava2_projectile_explosive._fade")
+            inst._fade = net_tinybyte(inst.GUID, "blowdart_green_projectile_explosive._fade")
         end
     end
     ------------------------------------------
-    local inst = COMMON_FNS.EQUIPMENT.CommonProjectileFN("lavaarena_blowdart_attacks", "lavaarena_blowdart_attacks", anim, projectile_values, tail_values)
+    local inst = COMMON_FNS.EQUIPMENT.CommonProjectileFN("lavaarena_blowdart_attacks", nil, anim, projectile_values, tail_values)
 	------------------------------------------
     if not TheWorld.ismastersim then
         return inst
@@ -236,6 +228,130 @@ local function projectileexplosivefn()
     return commonprojectilefn("attack_4_large", "_large", true)
 end
 --------------------------------------------------------------------------
-return ForgePrefab("healingdart", fn, assets, prefabs, nil, tuning_values.ENTITY_TYPE, "INFORGE", "images/inventoryimages.xml", "blowdart_lava2.tex", "swap_blowdart_lava2", "common_hand"),
-    Prefab("healingdart_projectile", projectilefn, assets_projectile, prefabs_projectile),
-    Prefab("healingdart_projectile_explosive", projectileexplosivefn, assets_projectile, prefabs_projectile_explosive)
+local function onthrown(inst, owner)
+    inst:AddTag("NOCLICK")
+    inst.persists = false
+    ------------------------------------------
+    if inst.SoundEmitter:PlayingSound("hiss") then
+        inst.SoundEmitter:KillSound("hiss")
+    end
+    inst.SoundEmitter:PlaySound("dontstarve/common/blackpowder_fuse_LP", "hiss")
+    ------------------------------------------
+    --inst.Physics:SetMass(1)
+    --inst.Physics:SetCapsule(0.2, 0.2)
+    --inst.Physics:SetFriction(0)
+    --inst.Physics:SetDamping(0)
+    inst.Physics:SetCollisionGroup(COLLISION.CHARACTERS)
+    inst.Physics:ClearCollisionMask()
+    inst.Physics:CollidesWith(COLLISION.WORLD)
+    inst.Physics:CollidesWith(COLLISION.OBSTACLES)
+    inst.Physics:CollidesWith(COLLISION.ITEMS)
+end
+
+local function OnHitFire(inst, attacker, target, weapon, damage)
+    print("OnHitFire", inst, attacker, target, weapon, damage)
+    --[[
+	inst.SoundEmitter:KillSound("hiss")
+	local explosion = COMMON_FNS.CreateFX("firebomb_explosion", target, attacker)
+    explosion.Transform:SetPosition(inst.Transform:GetWorldPosition())
+    local scale = inst.Transform:GetScale()
+	DoExplosiveAoe(weapon, inst, attacker, inst:GetPosition(), tuning_values.ALT_RANGE*scale, damage, nil, true)
+    inst:Remove()
+    ]]--
+end
+
+local physics = {
+    mass   = 1,
+    radius = 0.2,
+}
+
+local function PhysicsInit(inst)
+    inst.entity:AddPhysics()
+    inst.Physics:SetMass(physics.mass)
+    inst.Physics:SetFriction(0)
+    inst.Physics:SetDamping(0)
+    inst.Physics:SetRestitution(.5)
+    inst.Physics:SetCollisionGroup(COLLISION.ITEMS)
+    inst.Physics:ClearCollisionMask()
+    inst.Physics:CollidesWith(COLLISION.GROUND)
+    inst.Physics:SetCapsule(physics.radius,physics.radius)
+end
+
+local function CreateProjectileAnim(source)
+    local inst = CreateEntity()
+    inst.entity:AddTransform()
+    inst.entity:AddAnimState()
+    ------------------------------------------
+    inst:AddTag("FX")
+    inst:AddTag("NOCLICK")
+    ------------------------------------------
+    --[[Non-networked entity]]
+    inst.persists = false
+    ------------------------------------------
+	--Leo: We're not sure why Klei left this here, but it seems to break other similar projectiles like waterballoon?
+	--Doesn't seem to do anything in general, real weird. If anyone is using this for their own firebomb clone, if your projectile is turning invisible, just disable this.
+    --inst.Transform:SetSixFaced()
+    ------------------------------------------
+    inst.AnimState:SetBank("lavaarena_firebomb")
+    inst.AnimState:SetBuild("lavaarena_firebomb")
+    inst.AnimState:PlayAnimation("spin_loop", true)
+    inst.AnimState:SetBloomEffectHandle("shaders/anim.ksh")
+    ------------------------------------------
+    local scale = source.Transform:GetScale()
+    inst.Transform:SetScale(scale,scale,scale)
+    ------------------------------------------
+    return inst
+end
+
+local function PristineFN(inst)
+    inst.entity:AddSoundEmitter()
+    ------------------------------------------
+    inst.direction = net_float(inst.GUID, "lavaarena_healingbomb_projectile.direction", "directiondirty")
+    ------------------------------------------
+    --Dedicated server does not need to spawn the local animation
+    if not TheNet:IsDedicated() then
+        inst.animent = CreateProjectileAnim(inst)
+        inst.animent.entity:SetParent(inst.entity)
+    end
+end
+
+local bomb_projectile_values = {
+    physics         = physics,
+    physics_init_fn = PhysicsInit,
+    pristine_fn     = PristineFN,
+    complex         = true,
+    no_tail         = true,
+    speed           = tuning_values.HORIZONTAL_SPEED,
+    gravity         = tuning_values.GRAVITY,
+    launch_offset   = Vector3(unpack(tuning_values.VECTOR)),
+    OnLaunch        = onthrown,
+    OnHit           = OnHitFire,
+}
+
+local function OnDirectionDirty(inst)
+    inst.animent.Transform:SetRotation(inst.direction:value())
+end
+
+local function healbombfn()
+    local inst = COMMON_FNS.EQUIPMENT.CommonProjectileFN(nil, nil, nil, bomb_projectile_values)
+    ------------------------------------------
+    --inst:AddTag("inf_onlyhitteammate")
+    ------------------------------------------
+    if not TheWorld.ismastersim then
+        inst:ListenForEvent("directiondirty", OnDirectionDirty)
+        return inst
+    end
+    ------------------------------------------
+	inst.AttackArea = function(inst, attacker, weapon, pos) -- TODO are any of these actually used?
+		weapon.firebomb = inst
+		inst.attacker = attacker
+		inst.owner = weapon
+	end
+    ------------------------------------------
+    return inst
+end
+--------------------------------------------------------------------------
+return Prefab("healingdart_projectile", projectilefn, assets_projectile, prefabs_projectile),
+    Prefab("healingdart_projectile_explosive", projectileexplosivefn, assets_projectile, prefabs_projectile_explosive),
+    Prefab("healingbomb_projectile", healbombfn, bomb_assets_fx, bomb_prefabs_projectile),
+    ForgePrefab("healingdart", fn, assets, prefabs, nil, tuning_values.ENTITY_TYPE, "INFORGE", "images/blowdart_green.xml", "blowdart_green.tex", "swap_blowdart_green", "common_hand")
