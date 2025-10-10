@@ -3,30 +3,17 @@ local assets = {
     Asset("ANIM", "anim/blowdart_green.zip"),
     Asset("ANIM", "anim/swap_blowdart_green.zip"),
 }
---[[
-local bomb_assets_fx = {
-    Asset("ANIM", "anim/lavaarena_firebomb.zip"),
-}
-local bomb_prefabs_projectile={
-    "firebomb_explosion",
-    "firehit",
-}
-    ]]--
 local assets_projectile = {
     Asset("ANIM", "anim/lavaarena_blowdart_attacks.zip"),
 }
+
 local prefabs = {
     "healingdart_projectile",
     "healingdart_projectile_explosive",
     "reticulelong",
     "reticulelongping",
-    
-    "healingbomb_projectile",
     "firebomb_projectile",
-    "firebomb_proc_fx",
-    "firebomb_sparks",
     "reticuleaoesmall",
-    "reticuleaoesmallping",
     "reticuleaoesmallhostiletarget",
 }
 local prefabs_projectile = {
@@ -44,13 +31,15 @@ local IGNORE_TAGS = {"notarget", "INLIMBO", "playerghost"}
 
 local function DoExplosiveHealingAoe(weapon, projectile, caster, target_pos, radius, damage, excluded_targets, is_alt)
     local x, y, z = target_pos:Get()
-    local targets = TheSim:FindEntities(x, y, z, radius, {"LA_mob", "player"}, IGNORE_TAGS)
+    local targets = TheSim:FindEntities(x, y, z, radius, nil, IGNORE_TAGS, {"LA_mob", "player", "companion"})
 
 	for _,target in pairs(targets) do
-        if target:HasTag("LA_mob") and target.components.health and not target.components.health:IsDead() then
-            caster.components.combat:DoAttack(target, weapon, projectile, tuning_values.ALT_STIMULI, nil, damage, is_alt)
-        elseif COMMON_FNS.IsAlly(caster, target) and target.components.health and not target.components.health:IsDead() then
-            target.components.health:DoDelta(tuning_values.BOMB_HEAL)
+        if target.components.health and not target.components.health:IsDead() then
+            if target:HasTag("LA_mob") then
+                caster.components.combat:DoAttack(target, weapon, projectile, tuning_values.ALT_STIMULI, nil, damage, is_alt)
+            elseif target:HasTag("player") or target:HasTag("companion") then
+                target.components.health:DoDelta(tuning_values.BOMB_HEAL)
+            end
         end
 	end
 end
@@ -69,11 +58,12 @@ local function MoltenBolt(inst, caster, pos, options)
         local projectile = SpawnPrefab("firebomb_projectile")
         projectile.Transform:SetPosition(inst:GetPosition():Get())
         projectile.owner = caster
+        projectile.components.complexprojectile:SetOnHit(OnHitFire)
         projectile.components.complexprojectile:Launch(pos, caster, inst, caster.components.combat:CalcDamage(nil, inst, nil, true, nil, tuning_values.ALT_STIMULI), true)--print(tostring(ThePlayer.components.combat:CalcDamage(nil, inst, nil, true)))
         projectile:AttackArea(caster, inst, pos) -- TODO is this needed?
 
         projectile:AddTag("inf_canattackplayer")
-        projectile.components.complexprojectile:SetOnHit(OnHitFire)
+        
 
         inst.components.rechargeable:StartRecharge()
         inst.components.aoespell:OnSpellCast(caster)
@@ -259,129 +249,6 @@ local function projectileexplosivefn()
     return commonprojectilefn("attack_4_large", "_large", true)
 end
 --------------------------------------------------------------------------
---[[
-local function onthrown(inst, owner)
-    inst:AddTag("NOCLICK")
-    inst.persists = false
-    ------------------------------------------
-    if inst.SoundEmitter:PlayingSound("hiss") then
-        inst.SoundEmitter:KillSound("hiss")
-    end
-    inst.SoundEmitter:PlaySound("dontstarve/common/blackpowder_fuse_LP", "hiss")
-    ------------------------------------------
-    --inst.Physics:SetMass(1)
-    --inst.Physics:SetCapsule(0.2, 0.2)
-    --inst.Physics:SetFriction(0)
-    --inst.Physics:SetDamping(0)
-    inst.Physics:SetCollisionGroup(COLLISION.CHARACTERS)
-    inst.Physics:ClearCollisionMask()
-    inst.Physics:CollidesWith(COLLISION.WORLD)
-    inst.Physics:CollidesWith(COLLISION.OBSTACLES)
-    inst.Physics:CollidesWith(COLLISION.ITEMS)
-end
-
-local function OnHitFire(inst, attacker, target, weapon, damage)
-    print("OnHitFire", inst, attacker, target, weapon, damage)
-	inst.SoundEmitter:KillSound("hiss")
-	local explosion = COMMON_FNS.CreateFX("firebomb_explosion", target, attacker)
-    explosion.Transform:SetPosition(inst.Transform:GetWorldPosition())
-    local scale = inst.Transform:GetScale()
-	DoExplosiveAoe(weapon, inst, attacker, inst:GetPosition(), tuning_values.ALT_RANGE*scale, damage, nil, true)
-    inst:Remove()
-end
-
-local physics = {
-    mass   = 1,
-    radius = 0.2,
-}
-
-local function PhysicsInit(inst)
-    inst.entity:AddPhysics()
-    inst.Physics:SetMass(physics.mass)
-    inst.Physics:SetFriction(0)
-    inst.Physics:SetDamping(0)
-    inst.Physics:SetRestitution(.5)
-    inst.Physics:SetCollisionGroup(COLLISION.ITEMS)
-    inst.Physics:ClearCollisionMask()
-    inst.Physics:CollidesWith(COLLISION.GROUND)
-    inst.Physics:SetCapsule(physics.radius,physics.radius)
-end
-
-local function CreateProjectileAnim(source)
-    local inst = CreateEntity()
-    inst.entity:AddTransform()
-    inst.entity:AddAnimState()
-    ------------------------------------------
-    inst:AddTag("FX")
-    inst:AddTag("NOCLICK")
-    ------------------------------------------
-    inst.persists = false
-    ------------------------------------------
-	--Leo: We're not sure why Klei left this here, but it seems to break other similar projectiles like waterballoon?
-	--Doesn't seem to do anything in general, real weird. If anyone is using this for their own firebomb clone, if your projectile is turning invisible, just disable this.
-    --inst.Transform:SetSixFaced()
-    ------------------------------------------
-    inst.AnimState:SetBank("lavaarena_firebomb")
-    inst.AnimState:SetBuild("lavaarena_firebomb")
-    inst.AnimState:PlayAnimation("spin_loop", true)
-    inst.AnimState:SetBloomEffectHandle("shaders/anim.ksh")
-    ------------------------------------------
-    local scale = source.Transform:GetScale()
-    inst.Transform:SetScale(scale,scale,scale)
-    ------------------------------------------
-    return inst
-end
-
-local function PristineFN(inst)
-    inst.entity:AddSoundEmitter()
-    ------------------------------------------
-    inst.direction = net_float(inst.GUID, "lavaarena_healingbomb_projectile.direction", "directiondirty")
-    ------------------------------------------
-    --Dedicated server does not need to spawn the local animation
-    if not TheNet:IsDedicated() then
-        inst.animent = CreateProjectileAnim(inst)
-        inst.animent.entity:SetParent(inst.entity)
-    end
-end
-
-local bomb_projectile_values = {
-    physics         = physics,
-    physics_init_fn = PhysicsInit,
-    pristine_fn     = PristineFN,
-    complex         = true,
-    no_tail         = true,
-    speed           = tuning_values.HORIZONTAL_SPEED,
-    gravity         = tuning_values.GRAVITY,
-    launch_offset   = Vector3(unpack(tuning_values.VECTOR)),
-    OnLaunch        = onthrown,
-    OnHit           = OnHitFire,
-}
-
-local function OnDirectionDirty(inst)
-    inst.animent.Transform:SetRotation(inst.direction:value())
-end
-
-local function healbombfn()
-    local inst = COMMON_FNS.EQUIPMENT.CommonProjectileFN(nil, nil, nil, bomb_projectile_values)
-    ------------------------------------------
-    --inst:AddTag("inf_onlyhitteammate")
-    ------------------------------------------
-    if not TheWorld.ismastersim then
-        inst:ListenForEvent("directiondirty", OnDirectionDirty)
-        return inst
-    end
-    ------------------------------------------
-	inst.AttackArea = function(inst, attacker, weapon, pos) -- TODO are any of these actually used?
-		weapon.firebomb = inst
-		inst.attacker = attacker
-		inst.owner = weapon
-	end
-    ------------------------------------------
-    return inst
-end
-]]--
---------------------------------------------------------------------------
-return Prefab("healingdart_projectile", projectilefn, assets_projectile, prefabs_projectile),
-    Prefab("healingdart_projectile_explosive", projectileexplosivefn, assets_projectile, prefabs_projectile_explosive),
-    --Prefab("healingbomb_projectile", healbombfn, bomb_assets_fx, bomb_prefabs_projectile),
-    ForgePrefab("healingdart", fn, assets, prefabs, nil, tuning_values.ENTITY_TYPE, "INFORGE", "images/blowdart_green.xml", "blowdart_green.tex", "swap_blowdart_green", "common_hand")
+return ForgePrefab("healingdart", fn, assets, prefabs, nil, tuning_values.ENTITY_TYPE, "INFORGE", "images/blowdart_green.xml", "blowdart_green.tex", "swap_blowdart_green", "common_hand"),
+    Prefab("healingdart_projectile", projectilefn, assets_projectile, prefabs_projectile),
+    Prefab("healingdart_projectile_explosive", projectileexplosivefn, assets_projectile, prefabs_projectile_explosive)

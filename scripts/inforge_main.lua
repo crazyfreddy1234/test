@@ -1331,17 +1331,9 @@ local function ChangeReticule(player)
     end
 end
 
-AddComponentPostInit("playercontroller",function(self)
-    local _oldTryAOETargeting = self.TryAOETargeting
-
-    self.TryAOETargeting = function(self)
-        print("TryAOETargeting")
-        return _oldTryAOETargeting(self)
-    end
-end)
-
 AddComponentPostInit("aoetargeting",function(self)
     local _oldStartTargeting = self.StartTargeting
+    local _oldStopTargeting = self.StopTargeting
 
     self.StartTargeting = function(self)
         if self.inst.components.reticule == nil then
@@ -1365,6 +1357,15 @@ AddComponentPostInit("aoetargeting",function(self)
                 end
             end
         end
+    end
+
+    self.StopTargeting = function(self)
+        local owner = _G.ThePlayer
+        if owner and owner.Inforge_Skill_Key and owner.Inforge_Skill_Key:value() == "SHIFT" then
+            local handitem = owner and owner.components.inventory and owner.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS) or nil
+            handitem.mustaoe = true
+        end
+        _oldStopTargeting(self)
     end
 end)
 
