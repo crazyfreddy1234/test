@@ -1441,7 +1441,7 @@ AddComponentPostInit("playercontroller", function(self)
 end)
 
 
-
+local IGNORE_TAGS = {"notarget", "INLIMBO", "playerghost"}
 AddComponentPostInit("projectile",function(self)
     self.distance_traveled = 0
 	local old_OnUpdate = self.OnUpdate
@@ -1454,7 +1454,7 @@ AddComponentPostInit("projectile",function(self)
 		local valid_targets = {}
 		local target = nil
 		local x, y, z = current_pos:Get()
-        local ignore_targets = self.inst:HasTag("inf_onlyhitteammate") and _G.COMMON_FNS.GetEnemyTags(self.attacker) or _G.COMMON_FNS.CommonExcludeTags(self.attacker)
+        local ignore_targets = self.inst:HasTag("inf_onlyhitteammate") and _G.COMMON_FNS.GetEnemyTags(self.attacker) or (self.inst:HasTag("inf_canattackplayer") and IGNORE_TAGS or _G.COMMON_FNS.CommonExcludeTags(self.attacker))
 		local ents = TheSim:FindEntities(x, y, z, 3, check_walls and {"wall"}, ignore_targets) -- TODO check hit radius throughout this function
 		for _,ent in ipairs(ents) do
 			-- The owner/attacker is not a valid target.
