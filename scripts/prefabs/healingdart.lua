@@ -3,6 +3,7 @@ local assets = {
     Asset("ANIM", "anim/blowdart_green.zip"),
     Asset("ANIM", "anim/swap_blowdart_green.zip"),
 }
+
 local assets_projectile = {
     Asset("ANIM", "anim/lavaarena_blowdart_attacks.zip"),
 }
@@ -12,7 +13,7 @@ local prefabs = {
     "healingdart_projectile_explosive",
     "reticulelong",
     "reticulelongping",
-    "firebomb_projectile",
+
     "reticuleaoesmall",
     "reticuleaoesmallhostiletarget",
 }
@@ -56,6 +57,7 @@ end
 local function MoltenBolt(inst, caster, pos, options)
     if options.ctrl and options.ctrl == 2 then
         local projectile = SpawnPrefab("firebomb_projectile")
+        projectile.animent.AnimState:SetMultColour(0, 1, 0, 1)
         projectile.Transform:SetPosition(inst:GetPosition():Get())
         projectile.owner = caster
         projectile.components.complexprojectile:SetOnHit(OnHitFire)
@@ -63,7 +65,6 @@ local function MoltenBolt(inst, caster, pos, options)
         projectile:AttackArea(caster, inst, pos) -- TODO is this needed?
 
         projectile:AddTag("inf_canattackplayer")
-        
 
         inst.components.rechargeable:StartRecharge()
         inst.components.aoespell:OnSpellCast(caster)
@@ -73,6 +74,7 @@ local function MoltenBolt(inst, caster, pos, options)
         dart.components.projectile:AimedThrow(inst, caster, pos, caster.components.combat:CalcDamage(nil, inst, nil, true, nil, tuning_values.ALT_STIMULI), true)
         dart.components.projectile:DelayVisibility(inst.projectiledelay)
         caster.SoundEmitter:PlaySound("dontstarve/common/lava_arena/blow_dart")
+        
         inst.components.rechargeable:StartRecharge()
         inst.components.aoespell:OnSpellCast(caster, nil, dart)
     end
@@ -144,10 +146,10 @@ local function OnUpdateProjectileTail(inst)
             bank         = "lavaarena_blowdart_attacks",
             build        = "lavaarena_blowdart_attacks",
             anim         = weighted_random_choice(thin_tail and thintails or tails) .. inst.tail_suffix,
-            add_colour   = not thin_tail and {1,1,0,0} or nil,
-            --final_offset = 0, -- TODO test this now, forgot to erase this to test, need to set all the other projectiles that need -1
+            add_colour   = not thin_tail and {0,0,0,0} or nil,
             orientation  = ANIM_ORIENTATION.OnGround,
         }
+        print(tail_values.add_colour)
         local tail = inst.CreateTail(tail_values, inst)
         tail.Transform:SetPosition(inst.Transform:GetWorldPosition())
         tail.Transform:SetRotation(inst.Transform:GetRotation())
@@ -173,7 +175,7 @@ local function AltOnHit(inst, attacker, target)
     local explosive_fx = COMMON_FNS.CreateFX("explosivehit", target, attacker)
 	explosive_fx.Transform:SetPosition(inst:GetPosition():Get())
 	ShakeIfClose(inst)
-
+    
     if target and target.components.health and not target.components.health:IsDead() and target:HasTag("player") then
         target.components.health:DoDelta(tuning_values.ALT_HEAL)
     end
@@ -193,7 +195,7 @@ local projectile_values = {
 		stimuli = tuning_values.ALT_STIMULI,
 		OnHit   = AltOnHit,
 	},
-    add_colour    = {1,1,0,0},
+    mult_colour    = {0,1,0,1},
 }
 local tail_values = {
     --bank        = "lavaarena_blowdart_attacks",

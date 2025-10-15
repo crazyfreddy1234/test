@@ -1084,7 +1084,9 @@ local function GetState(obj, states, action)
 
     if obj.multiple_castaoe then
         for _,mul_action in pairs(obj.multiple_castaoe) do
-            obj:RemoveTag(mul_action)
+            if obj:HasTag(mul_action) then
+                obj:RemoveTag(mul_action)
+            end
         end
         
         if action.options and action.options.ctrl then
@@ -1116,7 +1118,9 @@ AddPlayerPostInit(function(inst)
         if weapon and attack_tag and (not weapon:HasTag(attack_tag)) then
             if weapon.multiple_castaoe then
                 for _, v in pairs(weapon.multiple_castaoe) do
-                    weapon:RemoveTag(v)   -- REMOVE ALL AOE TAGS. for safety
+                    if weapon:HasTag(v) then
+                        weapon:RemoveTag(v)   -- REMOVE ALL AOE TAGS. for safety
+                    end
                 end
             end
             weapon:AddTag(attack_tag)  -- add normal attack animation.
