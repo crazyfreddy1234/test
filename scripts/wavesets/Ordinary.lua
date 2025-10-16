@@ -854,7 +854,6 @@ local function RandomBasicItem(count)
 		table.remove(BasicItem,randomitemnum)
 	end
 
-	print(randomitems)
 
 	return randomitems
 end
@@ -908,12 +907,12 @@ end
  	waves={},
  	wavemanager={}
  }
- --[[
+ 
  waveset_data[1].wavemanager.dialogue={
-	--[1]={speech="BOARLORD_ROUND1_START"},
+	[1]={speech="BOARLORD_ROUND1_START"},
 	[2]={speech="BOARLORD_ROUND1_FIGHT_BANTER",is_banter=true}
 }
-]]--
+
  waveset_data[1].waves[1]=_W.SetSpawn({_W.CreateSpawn(mob_spawns[1][1][1]),{1}},{_W.CreateSpawn(mob_spawns[1][1][2]),{2}},{_W.CreateSpawn(mob_spawns[1][1][3]),{3}})
  waveset_data[1].waves[2]=_W.SetSpawn({_W.CreateSpawn(mob_spawns[1][2][1]),{1}},{_W.CreateSpawn(mob_spawns[1][2][2]),{2}},{_W.CreateSpawn(mob_spawns[1][2][3]),{3}})
 
@@ -923,19 +922,19 @@ waveset_data[2]={
 }
 
 waveset_data[2].wavemanager.dialogue={
-	--[1]={speech="BOARLORD_ROUND2_START"},
-	--[2]={speech="BOARLORD_ROUND2_FIGHT_BANTER",is_banter=true}
+	[1]={speech="BOARLORD_ROUND2_START"},
+	[2]={speech="BOARLORD_ROUND2_FIGHT_BANTER",is_banter=true}
 }
 
 waveset_data[2].waves[1]=_W.SetSpawn({_W.CreateSpawn(mob_spawns[2][1][1]),{1}},{_W.CreateSpawn(mob_spawns[2][1][2]),{3}})
 waveset_data[2].waves[2]=_W.SetSpawn({_W.CreateSpawn(mob_spawns[2][2][1]),{1}},{_W.CreateSpawn(mob_spawns[2][2][2]),{3}})
 
 waveset_data[2].wavemanager.onspawningfinished[1]=function(self,spawnedmobs)
-	--LeashPigsAndThreeCroc(self,spawnedmobs)
+	LeashPigsAndThreeCroc(self,spawnedmobs)
 end
 
 waveset_data[2].wavemanager.onspawningfinished[2]=function(self,spawnedmobs)
-	--LeashPigsAndThreeCroc(self,spawnedmobs)
+	LeashPigsAndThreeCroc(self,spawnedmobs)
 end
 
 waveset_data[3]={

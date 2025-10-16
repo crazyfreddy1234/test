@@ -1,4 +1,6 @@
-
+local RPX,_W=TUNING.modfns["workshop-2038128735"],UTIL.WAVESET
+local AddReforgedPrefab = RPX.AddReforgedPrefab
+local AddWaveTimer = RPX.AddWaveTimer
 
 --MOB SPAWNS--
 

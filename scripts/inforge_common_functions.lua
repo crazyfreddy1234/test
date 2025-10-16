@@ -66,7 +66,6 @@ local function R_FindTargets(inst, radius)
     local pos = inst:GetPosition()
     local ents = _G.TheSim:FindEntities(pos.x, 0, pos.z, radius or 5,{"player", "RDPS"}, {"notarget", "INLIMBO", "playerghost","already_target"})
 
-    print("R activate , " .. #ents)
 
     if ents ~= nil and #ents > 0 then
         return ents
@@ -182,9 +181,7 @@ local function FindTargetsPriority(inst, radius, R_PRIORITY, M_PRIORITY, H_PRIOR
 
     local result_players = {}
 
-    print("\n=== Selected Result ===")
     for i, weapon_type in ipairs(result) do
-        print(i, weapon_type)
 
         local type_FindTargets = find_target_funcs[weapon_type]
 
@@ -194,17 +191,11 @@ local function FindTargetsPriority(inst, radius, R_PRIORITY, M_PRIORITY, H_PRIOR
             if players and #players > 0 then
                 local random_index = math.random(#players)
                 local chosen = players[random_index]
-                print("선택된 대상:", chosen)
                 
                 table.insert(result_players, chosen)
             else
-                print("타겟 없음")
             end
         end
-    end
-
-    for i,v in pairs(result_players) do
-        print(v)
     end
     
     return result_players

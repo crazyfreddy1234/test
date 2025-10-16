@@ -89,7 +89,6 @@ function Infernal_Skill:CoolDownDelta(delta)
 
 	self.inst:PushEvent("infernal_skill_cooldown_delta", { old = oldCoolDown, new = self.cooldown })
 
-	print(oldCoolDown,self.cooldown)
 
 	if oldCoolDown <= 0 and self.cooldown > 0 then
 		self:StartCoolDown(delta)
@@ -149,7 +148,6 @@ function Infernal_Skill:Active()
 	end
 	if self.skill ~= nil then
 		self.skill(self.inst)
-		print("skill active")
 	else
 		print("no skill")
 	end

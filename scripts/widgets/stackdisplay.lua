@@ -38,7 +38,6 @@ end
 
 function StackDisplay:SetText(text)
     if text == nil or not (type(text) == "number" or type(text) == "string")   then
-        print("STACKDISPLAY ERROR: ERROR TEXT")
         self.stacktext:SetString("ERROR")
     else
         self.stacktext:SetString(text)

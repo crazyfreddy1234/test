@@ -67,7 +67,6 @@ local function common_postinit(inst)
     inst.Map:SetTransparentOcean(true)
 --------------------------------------------------------------------------  
     if not TheNet:IsDedicated() then
-        print("OCEAN COLOR UPDATING")
         inst.Map:DoOceanRender(true)
     end
 end

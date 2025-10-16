@@ -768,7 +768,6 @@ local function RandomBasicItem(count)
 		table.remove(BasicItem,randomitemnum)
 	end
 
-	print(randomitems)
 
 	return randomitems
 end

@@ -146,7 +146,7 @@ local Reminiscence_exp = {
     {desc = "ORDINARY_MILESTONE_5", val = TUNING.FORGE.EXP.WAVESETS.ROUND_5 * 1.5,atlas = "images/reminiscenceicon64.xml", tex = "reminiscenceicon64.tex"},
     {desc = "ORDINARY_WIN",         val = TUNING.FORGE.EXP.WAVESETS.VICTORY * 1.5,atlas = "images/reminiscenceicon64.xml", tex = "reminiscenceicon64.tex"},
 }
-AddWaveset("Ordinary",3,Reminiscence_icon,Reminiscence_exp)
+--AddWaveset("Ordinary",3,Reminiscence_icon,Reminiscence_exp)
 
 local Extraordinary_exp = {
     {desc = "EXTRAORDINARY_MILESTONE_1", val = TUNING.FORGE.EXP.WAVESETS.ROUND_1 * 5,atlas = "images/reminiscenceicon64.xml", tex = "reminiscenceicon64.tex"},
@@ -156,7 +156,7 @@ local Extraordinary_exp = {
     {desc = "EXTRAORDINARY_MILESTONE_5", val = TUNING.FORGE.EXP.WAVESETS.ROUND_5 * 5,atlas = "images/reminiscenceicon64.xml", tex = "reminiscenceicon64.tex"},
     {desc = "EXTRAORDINARY_WIN",         val = TUNING.FORGE.EXP.WAVESETS.VICTORY * 5,atlas = "images/reminiscenceicon64.xml", tex = "reminiscenceicon64.tex"},
 }
-AddWaveset("Extraordinary",3,Reminiscence_icon,Extraordinary_exp)
+--AddWaveset("Extraordinary",3,Reminiscence_icon,Extraordinary_exp)
 
 
 local TotalWar_exp = {
@@ -181,7 +181,7 @@ local TotalWar2_exp = {
     {desc = "TOTALWAR2_MILESTONE_2", val = TUNING.FORGE.EXP.WAVESETS.ROUND_2 * 3,atlas = "images/totalwar64.xml", tex = "totalwar64.tex"},
     {desc = "TOTALWAR2_WIN",         val = TUNING.FORGE.EXP.WAVESETS.VICTORY * 5,atlas = "images/totalwar64.xml", tex = "totalwar64.tex"},
 }
-AddWaveset("TotalWar2",3,TotalWar_icon,TotalWar2_exp)
+--AddWaveset("TotalWar2",3,TotalWar_icon,TotalWar2_exp)
 --_G.REFORGED_DATA.wavesets["TotalWar2"].power_on = false
 
 local Winter_exp = {
@@ -235,17 +235,15 @@ AddSimPostInit(function()
     if TUNING.HALLOWED_FORGE then 
         AddWaveset("Reflection",3,Reflection_icon,Reflection_exp,nil,3.5,"hallowedforge")
 
-        RF_DATA.wavesets.Reflection.must_map = "chapter1_cave"
+        --RF_DATA.wavesets.Reflection.must_map = "chapter1_cave"
     end
 
     if _G.TheWorld then
         _G.TheWorld:ListenForEvent("ms_playerspawn", function(world, inst)
-            print(tostring(inst) .. " spawn")
             RefreshHud()
         end)
 
         _G.TheWorld:ListenForEvent("ms_playerdespawn", function(world, inst)
-            print(tostring(inst) .. " despawn")
             RefreshHud()
         end)
     else

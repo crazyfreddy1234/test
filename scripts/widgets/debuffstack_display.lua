@@ -24,7 +24,6 @@ function DebuffStack_Display:ShowText(val)
 end
 
 function DebuffStack_Display:HideText()
-    print("hide text")
     self.stacktext:SetString("")
     self:Hide()
 end

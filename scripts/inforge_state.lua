@@ -76,49 +76,39 @@ return {
             tags = { "idle", "canrotate"},
 
             onenter = function(inst)
-                print("onenter start_channelcast_inforge")
                 inst.components.locomotor:Stop()
                 if inst.actionfailedevent == nil then
                     inst.actionfailedevent = inst:ListenForEvent("actionfailed", function(inst, data) print(reason) end)
                 end
                 if inst.bufferedaction then
-                    print("TRUE inst.bufferedaction")
                     inst:PerformPreviewBufferedAction()
                     StartPreviewChannelCast(inst, inst.bufferedaction)
                 end
                 if IsChannelCastingItem(inst) then
-                    print("IsChannelCastingItem TRUE")
                     inst.sg.statemem.channelcastitem = true
                     inst.AnimState:PlayAnimation("channelcast_idle_pre")
                     inst.AnimState:PushAnimation("channelcast_idle")
                 else
-                    print("IsChannelCastingItem FALSE")
                     inst.AnimState:PlayAnimation("channelcast_oh_idle_pre")
                     inst.AnimState:PushAnimation("channelcast_oh_idle")
                 end
                 inst.sg:SetTimeout(TIMEOUT)
-                print("onenter END")
             end,
 
             onupdate = function(inst)
                 if inst:IsChannelCasting() then
-                    print("inst.entity:FlattenMovementPrediction() TRUE")
                     if inst.entity:FlattenMovementPrediction() then
-                        print("TRUE inst.entity:FlattenMovementPrediction()")
                         StopPreviewChannelCast(inst)
                         inst.sg:GoToState("idle", "noanim")
                     else
-                        print("NOT inst.entity:FlattenMovementPrediction()")
                     end
                 elseif inst.bufferedaction == nil then
-                    print("inst.bufferedaction == nil TRUE")
                     inst.AnimState:PlayAnimation(inst.sg.statemem.channelcastitem and "channelcast_idle_pst" or "channelcast_oh_idle_pst")
                     inst.sg:GoToState("idle", true)
                 end
             end,
 
             ontimeout = function(inst)
-                print("time out")
                 inst:ClearBufferedAction()
                 inst.AnimState:PlayAnimation("channelcast_idle_pst")
                 inst.sg:GoToState("idle", true)
@@ -188,7 +178,6 @@ return {
             end,
 
             ontimeout = function(inst)
-                print("time out")
                 inst:ClearBufferedAction()
                 inst.sg:GoToState("idle")
             end,

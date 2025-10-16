@@ -65,7 +65,6 @@ local TeamHUD = Class(Widget, function(self, owner)
 end)
 
 function TeamHUD:TryToggleHUD()
-    print("change hide show")
     if self.is_open then
         self.team_panel:Hide()
     else

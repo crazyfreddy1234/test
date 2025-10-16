@@ -237,7 +237,6 @@ AddClassPostConstruct("widgets/debuff_display", function(self)
                 end)
 
                 self.stack_description[name] = reforge_string[name] .. result
-                print("[UPDATESTACKTEXT]",self.stack_description[name])
                 self.debuffstack_count[name] = stk
                 self:Update()
             end
@@ -282,7 +281,6 @@ AddClassPostConstruct("widgets/debuff_display", function(self)
                         self.icons[count]:SetPosition((((count - 1) % self.debuffs_per_row) + 1 - 1) * (self.icon_width + self.spacing), (row - 1) * (self.icon_height + self.spacing) * (self.add_icons_top_to_bottom and -1 or 1))
                         self.stackdisplay[name]:SetPosition( ((((count - 1) % self.debuffs_per_row) + 1 - 1) * (self.icon_width + self.spacing)) + 20 , ((row - 1) * (self.icon_height + self.spacing) * (self.add_icons_top_to_bottom and -1 or 1)) - 10 )
                     else
-                        print("[NO self.stack_description]")
                         self.icons[count]:SetHoverText(icon_info.hover_text)
                         self.icons[count]:SetPosition((((count - 1) % self.debuffs_per_row) + 1 - 1) * (self.icon_width + self.spacing), (row - 1) * (self.icon_height + self.spacing) * (self.add_icons_top_to_bottom and -1 or 1))
                     end
@@ -298,22 +296,18 @@ AddClassPostConstruct("widgets/debuff_display", function(self)
                     end
                 end
             else
-                print("[NO PLAYER OR DEBUFFABLE]", self.target, self.target.replica.debuffable)
             end
             
             for name,_ in pairs(self.stack_description) do
                 local found = false
                 for nam, _ in pairs(self.existing_stack_debuffs) do
-                    print("[NAM]", nam)
                     if name == nam then
-                        print("[FOUND]", name, nam)
                         found = true
                         break
                     end
                 end
 
                 if not found then
-                    print("[NOT FOUND]",name,nam,self.stack_description[name])
                     self.stack_description[name] = nil
                     self.debuffstack_count[name] = nil
 
@@ -322,10 +316,8 @@ AddClassPostConstruct("widgets/debuff_display", function(self)
                 end
             end
 
-            print("[UPDATE DONE]")
             
         else
-            print("[NO STACK_DESCIPTION]")
             OldUpdate(self)
         end
     end

@@ -675,12 +675,12 @@ _G.AddDebuff("debuff_flower_unhit", {atlas = "images/debuff_flower_unhit.xml", t
 _G.AddDebuff("debuff_inferno",      {atlas = "images/debuff_inferno.xml", tex = "debuff_inferno.tex"})
 
 --_G.AddMap("my_map", "MY_MAP", 3)
-_G.AddMap("chapter1_cave", "CHAPTER1_CAVE", 3)
+--_G.AddMap("chapter1_cave", "CHAPTER1_CAVE", 3)
 
-local CH1_CAVE = RF_DATA.maps.chapter1_cave
+--local CH1_CAVE = RF_DATA.maps.chapter1_cave
 
-CH1_CAVE.is_dungeon = true
-CH1_CAVE.must_waveset = "Reflection"
+--CH1_CAVE.is_dungeon = true
+--CH1_CAVE.must_waveset = "Reflection"
 
 
 local function FindPlayerByUserID(userid)

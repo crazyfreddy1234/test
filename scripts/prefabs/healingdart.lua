@@ -39,7 +39,9 @@ local function DoExplosiveHealingAoe(weapon, projectile, caster, target_pos, rad
             if target:HasTag("LA_mob") then
                 caster.components.combat:DoAttack(target, weapon, projectile, tuning_values.ALT_STIMULI, nil, damage, is_alt)
             elseif target:HasTag("player") or target:HasTag("companion") then
-                target.components.health:DoDelta(tuning_values.BOMB_HEAL)
+                local heal_dealt = caster and caster.components.buffable:ApplyStatBuffs({"heal_dealt"}) or 1
+
+                target.components.health:DoDelta(tuning_values.BOMB_HEAL * heal_dealt)
             end
         end
 	end
@@ -146,10 +148,9 @@ local function OnUpdateProjectileTail(inst)
             bank         = "lavaarena_blowdart_attacks",
             build        = "lavaarena_blowdart_attacks",
             anim         = weighted_random_choice(thin_tail and thintails or tails) .. inst.tail_suffix,
-            add_colour   = not thin_tail and {0,0,0,0} or nil,
+            mult_colour   = not thin_tail and {0.1,1,0.1,1} or nil,
             orientation  = ANIM_ORIENTATION.OnGround,
         }
-        print(tail_values.add_colour)
         local tail = inst.CreateTail(tail_values, inst)
         tail.Transform:SetPosition(inst.Transform:GetWorldPosition())
         tail.Transform:SetRotation(inst.Transform:GetRotation())
@@ -177,7 +178,9 @@ local function AltOnHit(inst, attacker, target)
 	ShakeIfClose(inst)
     
     if target and target.components.health and not target.components.health:IsDead() and target:HasTag("player") then
-        target.components.health:DoDelta(tuning_values.ALT_HEAL)
+        local heal_dealt = attacker and attacker.components.buffable:ApplyStatBuffs({"heal_dealt"}) or 1
+
+        target.components.health:DoDelta(tuning_values.ALT_HEAL * heal_dealt)
     end
 
 	inst:Remove()
@@ -195,7 +198,7 @@ local projectile_values = {
 		stimuli = tuning_values.ALT_STIMULI,
 		OnHit   = AltOnHit,
 	},
-    mult_colour    = {0,1,0,1},
+    mult_colour    = {0.1,1,0.1,1},
 }
 local tail_values = {
     --bank        = "lavaarena_blowdart_attacks",

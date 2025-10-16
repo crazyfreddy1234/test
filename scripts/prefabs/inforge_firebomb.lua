@@ -75,10 +75,8 @@ local function FireBombTossRepeat(inst, caster, pos, weapon)
         local radius = 3
         local offset = FindWalkableOffset(pt, theta, radius, 2, true, true)
         if offset then
-            print("active")
             pt = pt + offset
         else
-            print("not active")
             pt = nil 
         end
 
