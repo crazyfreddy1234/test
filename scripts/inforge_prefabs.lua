@@ -3,7 +3,7 @@ return {
 	--MOBS--
 	--"boarrior_infernal",
 	--"inforge_cursed_helmet",
-	"butter_roach_beetle",
+	--"butter_roach_beetle",
 
 
 	--WEAPON--
@@ -26,8 +26,8 @@ return {
 
 	--MAP PREFABS--
 	"arena_prefab/dunguen_center",
-	"arena_prefab/inforge_candle_staff",
-	"arena_prefab/inforge_candlefire",
+	--"arena_prefab/inforge_candle_staff",
+	--"arena_prefab/inforge_candlefire",
 
 
 	--MAPS--
