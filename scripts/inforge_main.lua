@@ -832,7 +832,9 @@ AddComponentPostInit("rechargeable", function(self)
 
 
     local function UseChargeFn(inst, data)
-        self:UseCharge()
+        if self.max_stacks ~= nil and self.max_stacks > 1 then
+            self:UseCharge()
+        end
     end
 
     self.inst:ListenForEvent("equipped", function(inst, data)
@@ -1352,7 +1354,7 @@ AddComponentPostInit("aoetargeting",function(self)
                     if self.inst.isfirstAOE == nil and self.inst.multiple_reticule then
                         ChangeReticule(owner)
                     end
-                    if self.inst.mustaoe then   
+                    if self.inst.mustaoe and self.inst.multiple_reticule then   
                         self.inst.components.reticule.mousetargetfn = nil
                         self.inst.components.reticule.updatepositionfn = nil
                         self.inst.mustaoe = nil
@@ -1366,8 +1368,10 @@ AddComponentPostInit("aoetargeting",function(self)
     self.StopTargeting = function(self)
         local owner = _G.ThePlayer
         if owner and owner.Inforge_Skill_Key and owner.Inforge_Skill_Key:value() == "SHIFT" then
-            local handitem = owner and owner.components.inventory and owner.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS) or nil
-            handitem.mustaoe = true
+            local handitem = owner and owner.replica.inventory and owner.replica.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS) or nil
+            if handitem and handitem.multiple_reticule then
+                handitem.mustaoe = true
+            end
         end
         _oldStopTargeting(self)
     end
@@ -1418,7 +1422,7 @@ AddComponentPostInit("playercontroller", function(self)
             local isInfernalMod = false
 
             for _,name in pairs(infernal_mod_name) do
-                if mod_name == nil and rmb.action.mod_name == name then
+                if mod_name == nil and rmb and rmb.action and rmb.action.mod_name == name then
                     mod_name = rmb.action.mod_name
                     isInfernalMod = true
                 end
@@ -1426,6 +1430,7 @@ AddComponentPostInit("playercontroller", function(self)
 
             if isInfernalMod == false then
                 _oldOnRemoteRightClick(self, actioncode, position, target, rotation, isreleased, controlmodscode, noforce, mod_name)
+                return
             end
 
 
@@ -1442,6 +1447,36 @@ AddComponentPostInit("playercontroller", function(self)
                 --print("Remote right click action failed: "..tostring(ACTION_IDS[actioncode]))
             end
         end
+    end
+end)
+
+local infernal_mod_name = {
+    ["workshop-2961923603"] = true, -- original mod
+    ["workshop-2996203358"] = true, -- beta test
+    ["infernal_test"] = true  --alpha test
+}
+
+AddComponentPostInit("playercontroller", function(self)
+    local _oldOnRemoteRightClick = self.OnRemoteRightClick
+
+    self.OnRemoteRightClick = function(self, actioncode, position, target, rotation, isreleased, controlmodscode, noforce, mod_name)
+        if mod_name == nil and self.ismastersim and self:IsEnabled() and self.handler == nil then
+            self.remote_controls[_G.CONTROL_SECONDARY] = 0
+            self:DecodeControlMods(controlmodscode)
+            _G.SetClientRequestedAction(actioncode, mod_name)
+            local lmb, rmb = self.inst.components.playeractionpicker:DoGetMouseActions(position, target)
+            _G.ClearClientRequestedAction()
+            if isreleased then
+                self.remote_controls[_G.CONTROL_SECONDARY] = nil
+            end
+            self:ClearControlMods()
+
+            if rmb ~= nil and infernal_mod_name[rmb.action.mod_name] then
+                mod_name = rmb.action.mod_name
+            end
+            return _oldOnRemoteRightClick(self, actioncode, position, target, rotation, isreleased, controlmodscode, noforce, mod_name)
+        end
+        return _oldOnRemoteRightClick(self, actioncode, position, target, rotation, isreleased, controlmodscode, noforce, mod_name)
     end
 end)
 
@@ -1490,7 +1525,7 @@ AddComponentPostInit("projectile",function(self)
 		end
 	end
 
-	function self:OnUpdate(dt)
+	self.OnUpdate = function(self, dt)
 		if self.aimed_throw or self.dropped then
 			local current_pos = self.inst:GetPosition()
 			current_pos.y = 0
@@ -1516,7 +1551,7 @@ AddComponentPostInit("projectile",function(self)
 	end
 end)
 
-
+--[[
 AddComponentPostInit("combat",function(self)
     local _oldCanHitTarget = self.CanHitTarget
 
@@ -1547,6 +1582,7 @@ AddComponentPostInit("combat",function(self)
         return false
     end
 end)
+]]--
 
 AddComponentPostInit("combat_replica",function(self)
     local _oldIsValidTarget = self.IsValidTarget
@@ -1619,7 +1655,6 @@ AddComponentPostInit("combat_replica",function(self)
                             local combat = attacker.replica.combat
                             if combat ~= nil and combat:GetTarget() ~= self.inst then
                                 --Follower check
-                                print("Follower","false")
                                 return false
                             end
                         end
@@ -1637,31 +1672,20 @@ AddComponentPostInit("combat_replica",function(self)
 
         if self.inst:HasAnyTag("shadowcreature", "nightmarecreature") and
             (	self._target:value() == nil
-                --[[or (--See if we're targeting someone else, and attacker isn't insane enough to help
-                    attacker ~= nil and
-                    sanity ~= nil and --set already in the above attacker ~= nil block
-                    self._target:value() ~= attacker and
-                    not (sanity:IsInsanityMode() and sanity:GetPercent() < .5)
-                    )]]
-                --V2C: The above version is the correct design; we should never have
-                --     allowed targeting invisible entities.
-                --     TODO: Add/improve items for revealing shadow creatures so we
-                --           can switch to that version.
-                or (--See if we're targeting someone else, but not actually hostile to them
+
+                or (
                     attacker ~= nil and
                     self._target:value() ~= attacker and
                     (self.inst.HostileToPlayerTest ~= nil and not self.inst:HostileToPlayerTest(self._target:value()))
                     )
             ) and
-            --Allow AOE damage on stationary shadows like Unseen Hands
+
             (attacker ~= nil or self.inst:HasTag("locomotor")) then
-            --Not insane attacker cannot attack shadow creatures
-            --(unless shadow creature is targeting attacker, or targeting
-            -- someone else, and attacker is below 50% sanity to help out)
+
             return false
         end
 
-        --Passed all checks, can be attacked by anyone
+
         return true
     end
 end)
