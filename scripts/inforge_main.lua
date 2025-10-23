@@ -949,41 +949,6 @@ AddComponentPostInit("debuff",function(self)
 
 end)
 
-AddComponentPostInit("playercontroller",function(self)
-    local Old_OnRightClick = self.OnRightClick
-
-    self.OnRightClick = function(self, down)
-        if not self:UsingMouse() then
-            return
-        elseif not down then
-            if self:IsEnabled() then
-                self:RemoteStopControl(_G.CONTROL_SECONDARY)
-            end
-            return
-        end
-
-        self:ClearActionHold()
-
-        self.startdragtime = nil
-        self.startdoubleclicktime = nil
-
-        if self.placer_recipe ~= nil then
-            self:CancelPlacement()
-            return
-        elseif self:IsAOETargeting() then
-            self:CancelAOETargeting()
-            return
-        elseif not self:IsEnabled() or _G.TheInput:GetHUDEntityUnderMouse() ~= nil then
-            return
-        end
-
-        self.actionholdtime = _G.GetTime()
-        
-
-        Old_OnRightClick(self, down)
-    end
-end)
-
 local start_healing = _G.Action({priority = 10, distance = 20})
 start_healing.str = "Start Healing"
 start_healing.id = "START_CHANNEL_HEALING"

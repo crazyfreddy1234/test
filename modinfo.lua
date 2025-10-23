@@ -1,6 +1,6 @@
 name="Infernal Forge"
-version="3.8.0"
-description="Welcome To Infernal Forge!    Version 3.8.0"
+version="3.9.0"
+description="Welcome To Infernal Forge!    Version 3.9.0"
 author="crazyfreddy & sock"
 --forumthread=""
 api_version=10

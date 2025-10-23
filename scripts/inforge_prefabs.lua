@@ -12,6 +12,7 @@ return {
 	"inforge_firebomb",
 	"livestaff",
 	"healingdart",
+	"spinlucy",
 
 
 	--DEBUFF--
