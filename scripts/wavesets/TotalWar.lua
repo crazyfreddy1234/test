@@ -223,6 +223,30 @@ local AddWaveTimer = RPX.AddWaveTimer
  waveset_data[1].waves[3]=_W.SetSpawn({_W.CreateSpawn(mob_spawns[1][1]),{2}},{_W.CreateSpawn(mob_spawns[1][3]),{1,3}})
 
  waveset_data[1].wavemanager.onspawningfinished[1]=function(self,spawnedmobs)
+	local function c_setTile()
+		for i= -12,20,1 do
+			for j=27,50,1 do
+				print(i)
+				local pos = {x=i,y=0,z=j}
+				local x, y = _G.TheWorld.Map:GetTileCoordsAtPoint(pos.x, pos.y, pos.z)
+				local oldType = _G.TheWorld.Map:GetTileAtPoint(pos.x, pos.y, pos.z)
+
+				local ents = TheSim:FindEntities(pos.x, 0, pos.z, 1) -- 반경 1로 주변 프리팹 검색
+				for _, ent in ipairs(ents) do
+					if ent:IsValid() and not ent:HasTag("player") and ent.prefab ~= "lavaarena_spawner" then
+						ent:Remove()
+					end
+				end
+
+				_G.TheWorld.Map:SetTile(x, y, GROUND.LAVAARENA_TRIM)
+				_G.TheWorld.Map:RebuildLayer(oldType, x, y)
+				_G.TheWorld.Map:RebuildLayer(GROUND.LAVAARENA_TRIM, x, y)
+			end
+		end
+		
+	end
+
+	c_setTile()
 	AddWaveTimer(self,3,2)
 end
 

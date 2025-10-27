@@ -7,9 +7,9 @@ return {
 
 
 	--WEAPON--
-	"inforge_blacksmithsedge",
-	"inforge_infernalstaff",
-	"inforge_firebomb",
+	--"inforge_blacksmithsedge",
+	--"inforge_infernalstaff",
+	--"inforge_firebomb",
 	"livestaff",
 	"healingdart",
 	"spinlucy",
