@@ -45,8 +45,6 @@ end
 AddStategraphPostInit("swineclops_hard",AddSGSwineclopsHard)
 
 
-
-
 AddComponentPostInit("rechargeable",function(self)
     local _oldGetRechargeTime = self.GetRechargeTime
     local _oldStartRecharge = self.StartRecharge
@@ -1749,3 +1747,4 @@ AddComponentPostInit("playeractionpicker", function(self)
     end
 end)
 ]]--
+

@@ -61,6 +61,70 @@ _G.TheMixer:AddNewMix("infernal_silence", 0, 8,
     [slurp] = 0,
 })
 
+
+
+
+
+local TileManager = require("tilemanager")
+local LAVAARENA_FLOOR_COLOR ={
+    primary_color =         {255, 255, 255, 255},
+    secondary_color =       {255, 255, 255, 255},
+    secondary_color_dusk =  {255, 255, 255, 255},
+    minimap_color =         {255, 255, 255, 255},
+}
+
+local function AddInforgeTile()
+    
+    AddTile(
+        "MY_CUSTOM_TILE",  -- 🔹 새 타일 ID
+        "LAND",
+        {
+            ground_name = "My Custom Tile",
+        },
+        {
+            name = "lavaarena_trim_ms",
+            noise_texture = "ground_noise_rainforest",
+            runsound = "dontstarve/movement/run_dirt",
+            walksound = "dontstarve/movement/walk_dirt",
+            snowsound = "dontstarve/movement/run_snow",
+            mudsound = "dontstarve/movement/run_mud",
+        },
+        {
+            name = "lavaarena_floor_ms",
+            noise_texture = "lavaarena_trim_mini",
+            --pickupsound = "grainy",
+        }
+    )
+    
+
+    --WORLD_TILES["MY_CUSTOM_TILE"] = 500
+    --_G.GROUND_NAMES["MY_CUSTOM_TILE"] = 500
+--[[
+
+    AddTile(
+        "INFORGE_LAVAARENA_FLOOR",
+        "LAND",
+        {ground_name = "cave"},
+        {
+            name="cave",
+            noise_texture="ocean_noise",
+            colors = LAVAARENA_FLOOR_COLOR,
+        },
+        {
+            name="lavaarena_floor_ms",
+            noise_texture="lavaarena_floor_mini",
+        }
+    )
+
+    WORLD_TILES[500] = "INFORGE_LAVAARENA_FLOOR"
+    _G.REFORGED_GROUND_TYPES[500] = WORLD_TILES[500]
+    ]]--
+end
+
+AddInforgeTile()
+
+
+
 AddClassPostConstruct("components/combat_replica", function(self)
     local _oldCanTarget = self.CanTarget
     function self:CanTarget(target)
@@ -193,6 +257,13 @@ local Winter_exp = {
     {desc = "WINTER_WIN",         val = TUNING.FORGE.EXP.WAVESETS.VICTORY,atlas = "images/reminiscenceicon64.xml", tex = "reminiscenceicon64.tex"},
 }
 --AddWaveset("Winter",3,Reminiscence_icon,Winter_exp)
+
+
+local LifeBloom_exp = {
+    {desc = "LIFEBLOOM_MILESTONE_1", val = TUNING.FORGE.EXP.WAVESETS.ROUND_1,atlas = "images/64wagstafficon.xml", tex = "64wagstafficon.tex"},
+    {desc = "LIFEBLOOM_MILESTONE_2", val = TUNING.FORGE.EXP.WAVESETS.ROUND_2,atlas = "images/64wagstafficon.xml", tex = "64wagstafficon.tex"},
+}
+AddWaveset("LifeBloom", 3, wagstaff_icon, LifeBloom_exp)
 
 
 

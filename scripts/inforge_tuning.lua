@@ -1,6 +1,44 @@
 
 local INFORGED_TUNING = {
 
+	---MOB---
+
+	LIFEBLOOM_BOARILLA = {
+		HEALTH            = 23200,
+		--Leo: Please test the speeds before changing them, boarilla doesn't run at a flat speed. He has slow movements and fast movements in different parts of the runstate.
+		--also these get multiplied by 1.2 due to scaling.
+		RUNSPEED          = 9, --Runner speed is 7.2 with +20 speed boost
+		WALKSPEED         = 6,
+		DAMAGE            = 200,
+		ATTACK_RANGE      = 3,
+		HIT_RANGE         = 3,
+		AOE_HIT_RANGE     = 2.25, -- TODO used?
+		FRONT_AOE_OFFSET  = 3,
+		ROLL_TRIGGER_1    = 0.9,
+		ROLL_TRIGGER_2    = 0.8,
+		ROLL_TRIGGER_3    = 0.6,
+		SLAM_TRIGGER      = 0.5,
+		JUMP_ATTACK_RANGE = 8, -- TODO used?
+		JUMP_HIT_RANGE    = 4, -- TODO used?
+		ATTACK_PERIOD     = 3.33,
+		ROLL_DURATION     = 5,
+		ROLL_CD           = 20, -- TODO might be 18
+		SLAM_CD           = 10,
+		BATTLECRY_CD      = 20, -- TODO could be 10 or even 5 still hmmm
+		SHEILD_CD         = 7, -- TODO rename to SHIELD_CD
+		FOSSIL_TIME       = 1, -- TODO adjust to real value
+		--Leo: Normally knockback is handled automatically via the knockback event, however these values are meant for entities that don't have a knockback listener.
+		ATTACK_KNOCKBACK  = 20, --was 25.
+		ENTITY_TYPE       = "ENEMIES",
+		WEIGHT            = 10,
+	},
+
+
+
+
+
+	--OTHER--
+
 	INFORGE_INFERNALSTAFF = {
 		DAMAGE          = 33,
 		ALT_DAMAGE      = 200,

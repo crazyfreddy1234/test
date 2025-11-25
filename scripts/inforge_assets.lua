@@ -77,4 +77,10 @@ return {
 
     Asset("ATLAS", "images/disco_rave.xml"),
     Asset("IMAGE", "images/disco_rave.tex"),
+
+
+
+    Asset("IMAGE", "levels/textures/lavaarena_trim_ms.tex"),
+    Asset("FILE",  "levels/textures/lavaarena_trim_ms.xml"),
+    Asset("IMAGE", "levels/textures/lavaarena_trim_noise.tex"),
 }
