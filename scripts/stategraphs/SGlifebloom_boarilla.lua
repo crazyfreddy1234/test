@@ -8,6 +8,22 @@ local function ShakePound(inst)
     ShakeAllCameras(CAMERASHAKE.FULL, 1.2, .03, .7, inst, 30)
 end
 
+local function QuakeDebuffAndDamage(inst)
+    local boarilla_quake_fx = SpawnPrefab("groundpoundring_fx")
+    local x, y, z = inst.Transform:GetWorldPosition()
+
+    boarilla_quake_fx.Transform:SetPosition(x, y, z)
+
+    for i,player in pairs(AllPlayers) do
+        if player:IsValid() and not player.components.health:IsDead() then
+            if player:HasDebuff("debuff_quake") then
+                player.components.debuffable:RemoveDebuff("debuff_quake")
+            end
+            player.components.debuffable:AddDebuff("debuff_quake", "debuff_quake")
+        end
+    end
+end
+
 lifebloom_boarilla_sg.states["enter_shield_phase"] = State{
     name = "enter_shield_phase",
     tags = {"attack", "busy", "jumping", "keepmoving", "pre_attack", "nofreeze", "delaysleep"},
@@ -122,6 +138,10 @@ lifebloom_boarilla_sg.states["shield_phase_hide_start"] = State{
     },
 }
 
+
+local QUAKE_ACTIVATE_TIME = 5
+local INITIAL_TIME = 0
+
 lifebloom_boarilla_sg.states["shield_phase_hiding"] = State{
     name = "shield_phase_hiding",
     tags = {"busy", "hiding", "nosleep", "nofreeze"},
@@ -134,6 +154,11 @@ lifebloom_boarilla_sg.states["shield_phase_hiding"] = State{
         inst.components.debuffable:RemoveDebuff("shield_buff", "shield_buff")
         inst.components.sleeper:SetResistance(9999)
         inst.components.health:SetAbsorptionAmount(inst.hide_absorption or 1)
+
+        if inst.quaketask == nil then
+            inst.quaketask = inst:DoPeriodicTask(QUAKE_ACTIVATE_TIME, QuakeDebuffAndDamage, INITIAL_TIME)
+        end
+
         inst.Physics:Stop()
         inst.AnimState:PlayAnimation("hide_loop")
     end,

@@ -18,6 +18,7 @@ return {
 	--DEBUFF--
 	"debuff_flower",
 	"debuff_inferno",
+	"debuff_quake",
 
 
 	--FX--

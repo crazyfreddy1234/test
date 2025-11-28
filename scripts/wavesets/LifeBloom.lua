@@ -7,7 +7,8 @@ local boarilla_tuning = TUNING.INFORGE.LIFEBLOOM_BOARILLA
 local mob_spawns = {}
 
 mob_spawns[1] = {
-    {{{"boarilla"}}}
+    {{{"boarilla"}}},
+    {{{"snortoise"}}}
 }
 
 mob_spawns[2] = {
@@ -75,28 +76,54 @@ end
 ------------------
 
 local function CheckMobAfterOneFrame(spawnedmobs, mob_name)
+    local name_mobs = {}
     for i, moblist in pairs(spawnedmobs) do
         for mob in pairs(moblist) do
-            print(mob.prefab)
             if mob.prefab == mob_name then
-                return mob
+                table.insert(name_mobs,mob)
             end
         end
-        return false
     end
+    return name_mobs
+end
+
+
+local function PhaseImmuneDamage(inst, amount, overtime, cause, ignore_invincible, afflicter, ignore_absorb)
+    return inst.sg:HasStateTag("hiding")
 end
 
 local function ChangeState_Boarilla(spawnedmobs)
-    local boarilla = CheckMobAfterOneFrame(spawnedmobs, "boarilla")
+    local all_boarillas = CheckMobAfterOneFrame(spawnedmobs, "boarilla")
 
-    if boarilla then
+    for i,boarilla in pairs(all_boarillas) do
         boarilla:SetStateGraph("SGlifebloom_boarilla")
         boarilla:SetBrain(require("brains/lifebloom_boarillabrain"))
 
         boarilla.components.health:SetMaxHealth(boarilla_tuning.HEALTH)
         boarilla.components.combat:SetDefaultDamage(boarilla_tuning.DAMAGE)
+
+        boarilla.components.health.redirect = PhaseImmuneDamage
     end
 end
+
+local function ChangeState_Snortoise(spawnedmobs)
+    local all_snortioses = CheckMobAfterOneFrame(spawnedmobs, "snortoise")
+
+    for i,snortoise in pairs(all_snortioses) do
+        snortoise:SetStateGraph("SGlifebloom_snortoise")
+
+        snortoise.components.combat:ToggleAttack("spin",true)
+        snortoise.components.combat.ignorehitrange=true
+    end
+end
+
+local boarilla_reinforce_1 = {
+    name="boarilla_reinforce_1",
+    mob_spawns=_W.SetSpawn({_W.CreateSpawn(mob_spawns[1][2]),{1,2,3}}),
+    onspawningfinished = function(self, spawnedmobs)
+        ChangeState_Snortoise(spawnedmobs)
+    end,
+}
 
 local waveset_data = {
     { -- Round 1
@@ -110,6 +137,18 @@ local waveset_data = {
             onspawningfinished = {
                 [1] = function(self, spawnedmobs)
                     ChangeState_Boarilla(spawnedmobs)
+                    ChangeState_Snortoise(spawnedmobs)
+                    
+                    self.inst:DoTaskInTime(0,function()
+                        local boaril = _W.OrganizeAllMobs(spawnedmobs).boarilla
+                        local bl=#boaril
+                        self.health_triggers.boaril = {
+                            [1]={total_percent=bl*0.5,fn=function()
+                                self:QueueWave(nil,true,boarilla_reinforce_1)
+                            end},
+                        }
+                        _W.AddHealthTriggers(self.health_triggers.boaril, unpack(boaril))
+                    end)
                 end,
             },
         },

@@ -19,7 +19,7 @@ local function ChangeMouseTargetFn(length) --def
     return function (inst, mousepos)
 		if mousepos ~= nil then
 			local x, y, z = inst.Transform:GetWorldPosition()
-			local dx = -mousepos.x + x
+			local dx = -mousepos.x + xdebuff_quake
 			local dz = -mousepos.z + z
 			local l = dx * dx + dz * dz
 			if l <= 0 then

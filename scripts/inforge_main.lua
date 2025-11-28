@@ -671,6 +671,7 @@ _G.AddDebuff("debuff_flower_speed", {atlas = "images/debuff_flower_speed.xml", t
 _G.AddDebuff("debuff_flower_regen", {atlas = "images/debuff_flower_regen.xml", tex = "debuff_flower_regen.tex"})
 _G.AddDebuff("debuff_flower_unhit", {atlas = "images/debuff_flower_unhit.xml", tex = "debuff_flower_unhit.tex"})
 _G.AddDebuff("debuff_inferno",      {atlas = "images/debuff_inferno.xml", tex = "debuff_inferno.tex"})
+_G.AddDebuff("debuff_quake",        {atlas = "images/reforged.xml", tex = "debuff_onfire.tex"})
 
 --_G.AddMap("my_map", "MY_MAP", 3)
 --_G.AddMap("chapter1_cave", "CHAPTER1_CAVE", 3)
