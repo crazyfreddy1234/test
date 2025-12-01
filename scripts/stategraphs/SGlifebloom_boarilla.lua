@@ -46,7 +46,6 @@ lifebloom_boarilla_sg.states["enter_shield_phase"] = State{
             inst.sg:RemoveStateTag("pre_attack")
 
             local world_center = _G.TheWorld.components.lavaarenaevent and _G.TheWorld.components.lavaarenaevent:GetArenaCenterPoint() or {0,0,0}
-            print(world_center)
             local function MoveOverTime(inst, target_pos, total_frames, on_done)
                 if target_pos == nil or total_frames == nil or total_frames <= 0 then
                     return

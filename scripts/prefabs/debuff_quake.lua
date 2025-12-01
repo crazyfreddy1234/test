@@ -18,7 +18,6 @@ local function SpawnQuakeFx(player)
 end
 
 local function OnAttached(inst, target)
-    print(target)
     DecreasePlayerHealth(target, QUAKE_DAMAGE)
     SpawnQuakeFx(target)
 end

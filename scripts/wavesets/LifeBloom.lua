@@ -106,7 +106,7 @@ local function ChangeState_Boarilla(spawnedmobs)
     end
 end
 
-local function ChangeState_Snortoise(spawnedmobs)
+local function ChangeState_Snortoise(spawnedmobs, self)
     local all_snortioses = CheckMobAfterOneFrame(spawnedmobs, "snortoise")
 
     for i,snortoise in pairs(all_snortioses) do
@@ -114,6 +114,27 @@ local function ChangeState_Snortoise(spawnedmobs)
 
         snortoise.components.combat:ToggleAttack("spin",true)
         snortoise.components.combat.ignorehitrange=true
+
+        snortoise:ListenForEvent("death",function(inst)
+            local other_mobs = TheSim:FindEntities(0, 0, 0, 999, {"LA_mob"})
+            local is_snortoise_all_dead = true
+
+            for i,mob in pairs(other_mobs) do
+                if mob.prefab == "snortoise" and not mob.components.health:IsDead() then
+                    is_snortoise_all_dead = false
+                end
+            end
+
+            if is_snortoise_all_dead then
+                _G.TheWorld.components.lavaarenaevent:QueueWave(nil,true,{
+                    name="boarilla_reinforce_1",
+                    mob_spawns=_W.SetSpawn({_W.CreateSpawn(mob_spawns[1][2]),{1,2,3}}),
+                    onspawningfinished = function(self, spawnedmobs)
+                        ChangeState_Snortoise(spawnedmobs)
+                    end,
+                })
+            end
+        end)
     end
 end
 
@@ -137,7 +158,7 @@ local waveset_data = {
             onspawningfinished = {
                 [1] = function(self, spawnedmobs)
                     ChangeState_Boarilla(spawnedmobs)
-                    ChangeState_Snortoise(spawnedmobs)
+                    ChangeState_Snortoise(spawnedmobs,self)
                     
                     self.inst:DoTaskInTime(0,function()
                         local boaril = _W.OrganizeAllMobs(spawnedmobs).boarilla
