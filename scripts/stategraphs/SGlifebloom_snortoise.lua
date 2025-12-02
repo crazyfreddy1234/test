@@ -20,34 +20,26 @@ end
 local REPEL_RADIUS = 5
 local REPEL_RADIUS_SQ = REPEL_RADIUS * REPEL_RADIUS
 local function KnockbackFromTarget(inst, target, attack_knockback)
-    if inst.components.combat and target.Physics then
+    if target.components.combat and target.Physics then
         local x, y, z = inst.Transform:GetWorldPosition()
         local distsq = target:GetDistanceSqToPoint(x, 0, z)
         --if distsq < REPEL_RADIUS_SQ then
-        if distsq > 0 then
-            target:ForceFacePoint(x, 0, z)
-        end
+        target:ForceFacePoint(x, 0, z)
         local k = .5 * distsq / REPEL_RADIUS_SQ - 1
         target.speed = 60 * k
         target.dspeed = 2
         target.Physics:ClearMotorVelOverride()
         target.Physics:Stop()
-        --[[ TODO why aren't we using kleis?
-        local k = distsq < rangesq and .3 * distsq / rangesq - 1 or -.7
-        inst.sg.statemem.speed = (data.strengthmult or 1) * 12 * k
-        inst.sg.statemem.dspeed = 0--]]
 
-        -- TODO Leo: Need to change this to check for bodyslot for these tags.
-        if target.components.inventory and target.components.inventory:ArmorHasTag("heavyarmor") or target:HasTag("heavybody") then
-            target:DoTaskInTime(0.1, function(inst) -- TODO why is this set to 0.1 and the else is set to 0? if they should both be the same then we can shorten this if statement to just be the dotaskintime
-                target.Physics:SetMotorVelOverride(-TUNING.FORGE.KNOCKBACK_RESIST_SPEED, 0, 0)
-            end)
-        else
-            target:DoTaskInTime(0, function(inst)
+        for i= 0, 0.3, 0.1 do
+            target:DoTaskInTime(i, function(target)
+                target.Physics:ClearMotorVelOverride()
+                target.Physics:Stop()
                 target.Physics:SetMotorVelOverride(-(attack_knockback or 1), 0, 0)
             end)
         end
-        target:DoTaskInTime(0.4, function(inst)
+
+        target:DoTaskInTime(0.4, function(target)
             target.Physics:ClearMotorVelOverride()
             target.Physics:Stop()
         end)
@@ -60,19 +52,20 @@ local function Check_Mob_Spin(inst)
 
     for i,ent in pairs(ents) do
         if ent and inst ~= ent then
-            print(inst,ent)
-            inst.sg:GoToState("stun",{stimuli = "strong"})
-            KnockbackFromTarget(ent, inst, 40)
+            inst.sg:GoToState("stun",{stimuli = "electric"})
+            inst:DoTaskInTime(0, function(inst)
+                if ent and not ent.components.health:IsDead() then
+                    inst:PushEvent("force_knockback", {knocker = ent, radius = 5, strengthmult = (ent.prefab == " boarilla" and 10) or 2, forcelanded = true})
+                end
+            end)
         end
     end
 end
 
 local function EndSpin(inst)
-    inst:DoTaskInTime(2,function(inst)
-        if not inst.components.health:IsDead() then
-            inst.components.health:DoDelta(-inst.components.health.maxhealth)
-        end
-    end)    
+    if not inst.components.health:IsDead() then
+        inst.components.health:DoDelta(-500)
+    end  
 end
 
 table.insert(new_timeline, TimeEvent(21*FRAMES, function(inst)
@@ -80,6 +73,15 @@ table.insert(new_timeline, TimeEvent(21*FRAMES, function(inst)
 end))
 
 spin_state.timeline = new_timeline
+
+
+
+
+local function OnEnterForceKnockbackPhase(inst, data)
+    inst.sg:GoToState("knockback", data)
+end
+
+lifebloom_snortoise_sg.events["force_knockback"] = EventHandler("force_knockback", OnEnterForceKnockbackPhase)
 
 
 

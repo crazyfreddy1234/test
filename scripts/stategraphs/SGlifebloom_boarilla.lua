@@ -11,6 +11,7 @@ end
 local function QuakeDebuffAndDamage(inst)
     local boarilla_quake_fx = SpawnPrefab("groundpoundring_fx")
     local x, y, z = inst.Transform:GetWorldPosition()
+    local ents = TheSim:FindEntities(x, y, z, 4, {"LA_mob","player"})
 
     boarilla_quake_fx.Transform:SetPosition(x, y, z)
 
@@ -20,6 +21,14 @@ local function QuakeDebuffAndDamage(inst)
                 player.components.debuffable:RemoveDebuff("debuff_quake")
             end
             player.components.debuffable:AddDebuff("debuff_quake", "debuff_quake")
+        end
+    end
+
+    for i,ent in pairs(ents) do
+        if ent:HasTag("LA_mob") and ent:HasStateTag("hiding") then
+
+        else
+
         end
     end
 end
