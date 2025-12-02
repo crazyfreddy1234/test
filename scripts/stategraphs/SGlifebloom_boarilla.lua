@@ -11,7 +11,7 @@ end
 local function QuakeDebuffAndDamage(inst)
     local boarilla_quake_fx = SpawnPrefab("groundpoundring_fx")
     local x, y, z = inst.Transform:GetWorldPosition()
-    local ents = TheSim:FindEntities(x, y, z, 4, {"LA_mob","player"})
+    local ents = TheSim:FindEntities(x, y, z, 5, nil, nil, {"LA_mob","player"})
 
     boarilla_quake_fx.Transform:SetPosition(x, y, z)
 
@@ -25,16 +25,33 @@ local function QuakeDebuffAndDamage(inst)
     end
 
     for i,ent in pairs(ents) do
-        if ent:HasTag("LA_mob") and ent:HasStateTag("hiding") then
-
-        else
-
+        if ent and ent ~= inst and not (ent:HasTag("LA_mob") and ent.sg:HasStateTag("hiding")) and not ent.components.health:IsDead() then
+            if ent:HasTag("LA_mob") and ent.prefab == "snortoise" then
+                ent:PushEvent("force_knockback", {knocker = ent, radius = 8, strengthmult = 10, forcelanded = false})
+            else
+                COMMON_FNS.KnockbackOnHit(inst, ent, 5, tuning_values.ATTACK_KNOCKBACK, 3, true) -- TODO tuning
+            end
         end
     end
 end
 
+local function RemoveAllQuake(inst)
+    for i,player in pairs(AllPlayers) do
+        if player:IsValid() and not player.components.health:IsDead() and player:HasDebuff("debuff_quake") then
+            player.components.debuffable:RemoveDebuff("debuff_quake")
+        end
+    end
+end
+
+local function StopQuakeAOE(inst)
+    if inst.quaketask then
+        _G.RemoveTask(inst.quaketask)
+        inst.quaketask = nil
+    end
+end
+
 lifebloom_boarilla_sg.states["enter_shield_phase"] = State{
-    name = "enter_shield_phase",
+    name = "enter_shield_phase", -- just jump to center
     tags = {"attack", "busy", "jumping", "keepmoving", "pre_attack", "nofreeze", "delaysleep"},
 
     onenter = function(inst, data)
@@ -122,6 +139,8 @@ lifebloom_boarilla_sg.states["shield_phase_hide_start"] = State{
         inst.sg:AddStateTag("nointerrupt")
         inst.Physics:Stop()
         inst.AnimState:PlayAnimation("hide_pre")
+
+        inst.is_using_shield = true
     end,
 
     timeline = {
@@ -158,6 +177,8 @@ lifebloom_boarilla_sg.states["shield_phase_hiding"] = State{
         inst.sg:AddStateTag("nostun")
         inst.sg:AddStateTag("nosleep")
         inst.sg:AddStateTag("nointerrupt")
+
+        inst.Physics:SetMass(0)
         
         inst.components.debuffable:RemoveDebuff("shield_buff", "shield_buff")
         inst.components.sleeper:SetResistance(9999)
@@ -172,6 +193,7 @@ lifebloom_boarilla_sg.states["shield_phase_hiding"] = State{
     end,
 
     onexit = function(inst)
+        inst.Physics:SetMass(500)
         inst.components.health:SetAbsorptionAmount(0)
         inst.components.sleeper:SetResistance(1)
     end,
@@ -193,8 +215,16 @@ lifebloom_boarilla_sg.states["shield_phase_hiding"] = State{
 local function OnEnterShieldPhase(inst, data)
     inst.sg:GoToState("enter_shield_phase", data)
 end
-
 lifebloom_boarilla_sg.events["enter_shield_phase"] = EventHandler("enter_shield_phase", OnEnterShieldPhase)
+
+
+
+local function OnEnterForceKnockbackPhase(inst, data)
+    StopQuakeAOE(inst)
+    RemoveAllQuake(inst)
+    inst.sg:GoToState("knockback", data)
+end
+lifebloom_boarilla_sg.events["force_knockback"] = EventHandler("force_knockback", OnEnterForceKnockbackPhase)
 
 
 

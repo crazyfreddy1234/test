@@ -103,6 +103,18 @@ local function ChangeState_Boarilla(spawnedmobs)
         boarilla.components.combat:SetDefaultDamage(boarilla_tuning.DAMAGE)
 
         boarilla.components.health.redirect = PhaseImmuneDamage
+
+        boarilla.count_spin_by_snortoise = 0
+        boarilla.is_using_shield = false
+        boarilla.get_spin_by_snortoise = function(snortoise, count)
+            boarilla.count_spin_by_snortoise = boarilla.count_spin_by_snortoise + count
+
+            if boarilla.count_spin_by_snortoise >= 3 then
+                boarilla.count_spin_by_snortoise = 0
+                boarilla.is_using_shield = false
+                boarilla:PushEvent("force_knockback", {knocker = snortoise, radius = 5, strengthmult = 2, forcelanded = true})
+            end
+        end
     end
 end
 
@@ -118,12 +130,23 @@ local function ChangeState_Snortoise(spawnedmobs, self)
         snortoise:ListenForEvent("death",function(inst)
             local other_mobs = TheSim:FindEntities(0, 0, 0, 999, {"LA_mob"})
             local is_snortoise_all_dead = true
+            local is_boarilla_using_shield = false
 
             for i,mob in pairs(other_mobs) do
                 if mob.prefab == "snortoise" and not mob.components.health:IsDead() then
                     is_snortoise_all_dead = false
                 end
+
+                if mob.prefab == "boarilla" then
+                    if not mob.components.health:IsDead() and mob.is_using_shield == true then
+                        is_boarilla_using_shield = true
+                    end
+                end
             end
+
+
+            if is_boarilla_using_shield == false then return end
+
 
             if is_snortoise_all_dead then
                 _G.TheWorld.components.lavaarenaevent:QueueWave(nil,true,{
@@ -165,6 +188,9 @@ local waveset_data = {
                         local bl=#boaril
                         self.health_triggers.boaril = {
                             [1]={total_percent=bl*0.5,fn=function()
+                                self:QueueWave(nil,true,boarilla_reinforce_1)
+                            end},
+                            [2]={total_percent=bl*0.1,fn=function()
                                 self:QueueWave(nil,true,boarilla_reinforce_1)
                             end},
                         }

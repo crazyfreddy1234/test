@@ -28,6 +28,11 @@ LifeBloom_Boarilla_UseShield = Class(BehaviourNode, function(self, inst, damage_
 	self.is_second_phase_started = false
 	self.first_phase_hide_health_percent = 0.5  
 	self.second_phase_hide_health_percent = 0.1
+    self.shield_broken_by_snortoise = false
+
+    self.inst:ListenForEvent("force_knockback", function(inst)
+        self.shield_broken_by_snortoise = true
+    end)
 end)
 
 function LifeBloom_Boarilla_UseShield:CheckHealth()
@@ -74,5 +79,9 @@ function LifeBloom_Boarilla_UseShield:Visit()
 			self.inst:PushEvent("exitshield") -- this is not my phase.this is original boarilla exit shield status.
 			self.status = SUCCESS
 		end
+
+        if self.shield_broken_by_snortoise == true then
+            self.status = SUCCESS
+        end
     end
 end

@@ -58,14 +58,20 @@ local function Check_Mob_Spin(inst)
                     inst:PushEvent("force_knockback", {knocker = ent, radius = 5, strengthmult = (ent.prefab == " boarilla" and 10) or 2, forcelanded = true})
                 end
             end)
+
+            if ent.prefab == "boarilla" and ent.get_spin_by_snortoise then
+                ent.get_spin_by_snortoise(inst, 1)
+            end
         end
     end
 end
 
 local function EndSpin(inst)
-    if not inst.components.health:IsDead() then
-        inst.components.health:DoDelta(-500)
-    end  
+    inst:DoTaskInTime(1, function(inst)
+        if not inst.components.health:IsDead() then
+            inst.components.health:DoDelta(-1000)
+        end  
+    end)
 end
 
 table.insert(new_timeline, TimeEvent(21*FRAMES, function(inst)
