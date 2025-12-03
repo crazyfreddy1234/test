@@ -111,7 +111,7 @@ local function IncreaseDamagePercent(target, inst) --dmg
         target.FumeOver_RedEnable:set(false)
     end
 
-    target.components.health:DoDelta(-((targetmaxhealth/100)*inst.DAMAGE_PERCENT), false, "enthusiasm", nil, nil)
+    target.components.health:DoDelta(-((targetmaxhealth/100)*inst.DAMAGE_PERCENT), false, inst.cause[1], nil, nil, true)
 end
 
 local function DamagedSlowly(inst, target) --dmg
@@ -212,7 +212,7 @@ local function HurtSelf(target, data) --unhit
     local OLD_HPS = target.HPS or 0
     target.HPS = GetTime()
     local damage = data.damageresolved * target.HPS -- 10% ~ 100%
-    target.components.health:DoDelta(-damage, false, "patience", nil, nil)
+    target.components.health:DoDelta(-damage, false, inst.cause[2], nil, nil, true)
 end
 
 local function StopShield(inst, target) --unhit
@@ -233,7 +233,7 @@ local function HalfReverseHeal(inst, data) --unhit
     local deltahp = newhp - oldhp
 
     if deltahp > 0 then
-        inst.components.health:DoDelta(-((inst.components.health.maxhealth * deltahp) * 1.5),false,"enthusiasm",nil,nil,true)
+        inst.components.health:DoDelta(-((inst.components.health.maxhealth * deltahp) * 1.5),false, inst.cause[1],nil,nil,true)
     end
 end
 
@@ -602,7 +602,7 @@ local function fn()
         speed   = -0.5,--0.9,
     }
     inst.tick_rate = 4*FRAMES--0.1 -- of a second (for acid)
-    inst.cause = "flower_regen"
+    inst.cause = {"enthusiasm", "patience"}
     inst.total_heal = inst.buffs.regen
     inst.SetCaster = function(inst, caster)
         if caster == nil then return end

@@ -204,7 +204,7 @@ local function RemoveStunLock(target)
         end
     end)
 end
-
+--[[
 local function UseOneKey(player,key)
     if player.components.health:IsDead() == true then return end
     local power = player.components.infernal_power
@@ -266,7 +266,7 @@ local function UseOneKey(player,key)
         end
     end
 end
-
+]]--
 local function ShowPowerUI(inst)
     if inst.HUD and inst.HUD.controls.status.powerwidget then
         local powerwidget = inst.HUD.controls.status.powerwidget
@@ -876,15 +876,12 @@ local function OnCustomKeyControl(inst)
     end)
 end
 
+]]--
 AddPlayerPostInit(function(inst)
-    inst:DoTaskInTime(_G.FRAMES,function()
-        if inst then
-            OnCustomKeyControl(inst)
-        end
+    inst:ListenForEvent("healthdealta",function(inst, data)
+        print("[INFERNAL] HEALTH DELTA ",data.cause, data.addlicter)
     end)
 end)
-]]--
-
 
 
 

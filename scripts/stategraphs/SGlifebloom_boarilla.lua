@@ -8,13 +8,14 @@ local function ShakePound(inst)
     ShakeAllCameras(CAMERASHAKE.FULL, 1.2, .03, .7, inst, 30)
 end
 
-local function QuakeDebuffAndDamage(inst)
+local function SpawnQuakeFX(inst)
     local boarilla_quake_fx = SpawnPrefab("groundpoundring_fx")
     local x, y, z = inst.Transform:GetWorldPosition()
-    local ents = TheSim:FindEntities(x, y, z, 5, nil, nil, {"LA_mob","player"})
 
     boarilla_quake_fx.Transform:SetPosition(x, y, z)
+end
 
+local function AddQuakeAllPlayers(inst)
     for i,player in pairs(AllPlayers) do
         if player:IsValid() and not player.components.health:IsDead() then
             if player:HasDebuff("debuff_quake") then
@@ -23,6 +24,11 @@ local function QuakeDebuffAndDamage(inst)
             player.components.debuffable:AddDebuff("debuff_quake", "debuff_quake")
         end
     end
+end
+
+local function KnockbackAllTargets(inst)
+    local x, y, z = inst.Transform:GetWorldPosition()
+    local ents = TheSim:FindEntities(x, y, z, 5, nil, nil, {"LA_mob","player"})
 
     for i,ent in pairs(ents) do
         if ent and ent ~= inst and not (ent:HasTag("LA_mob") and ent.sg:HasStateTag("hiding")) and not ent.components.health:IsDead() then
@@ -31,11 +37,18 @@ local function QuakeDebuffAndDamage(inst)
             else
                 COMMON_FNS.KnockbackOnHit(inst, ent, 5, tuning_values.ATTACK_KNOCKBACK, 3, true) -- TODO tuning
             end
+            ent.components.health:DoDelta(25, nil, "boarilla_quake", nil, inst.caster, true)
         end
     end
 end
 
-local function RemoveAllQuake(inst)
+local function QuakeDebuffAndDamage(inst)
+    SpawnQuakeFX(inst)
+    AddQuakeAllPlayers(inst)
+    KnockbackAllTargets(inst)
+end
+
+local function RemoveAllQuakeDebuff(inst)
     for i,player in pairs(AllPlayers) do
         if player:IsValid() and not player.components.health:IsDead() and player:HasDebuff("debuff_quake") then
             player.components.debuffable:RemoveDebuff("debuff_quake")
@@ -221,7 +234,7 @@ lifebloom_boarilla_sg.events["enter_shield_phase"] = EventHandler("enter_shield_
 
 local function OnEnterForceKnockbackPhase(inst, data)
     StopQuakeAOE(inst)
-    RemoveAllQuake(inst)
+    RemoveAllQuakeDebuff(inst)
     inst.sg:GoToState("knockback", data)
 end
 lifebloom_boarilla_sg.events["force_knockback"] = EventHandler("force_knockback", OnEnterForceKnockbackPhase)

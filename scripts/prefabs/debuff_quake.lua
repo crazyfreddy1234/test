@@ -4,9 +4,9 @@ local MAX_LEVEL = 5
 local DAMAGE_RECEIVED_MULT_DEBUFF = 1.2
 local QUAKE_DAMAGE = 25
 --------------------------------------------------------------------------
-local function DecreasePlayerHealth(player, amount) 
+local function DecreasePlayerHealth(inst, player, amount) 
     if player and player.components.health and not player.components.health:IsDead() then
-        player.components.health:DoDelta(-amount)
+        player.components.health:DoDelta(-amount, false, inst.cause, nil, nil, true)
     end
 end
 
@@ -18,12 +18,12 @@ local function SpawnQuakeFx(player)
 end
 
 local function OnAttached(inst, target)
-    DecreasePlayerHealth(target, QUAKE_DAMAGE)
+    DecreasePlayerHealth(inst, target, QUAKE_DAMAGE)
     SpawnQuakeFx(target)
 end
 
 local function OnExtended(inst, target)
-    DecreasePlayerHealth(target, QUAKE_DAMAGE)
+    DecreasePlayerHealth(inst, target, QUAKE_DAMAGE)
     SpawnQuakeFx(target)
 end
 
@@ -45,6 +45,7 @@ local function fn(inst)
 
     inst.components.debuff:SetMaxStack(10)
     ------------------------------------------
+    inst.cause = "quake"
     inst.duration = 20 -- in seconds
     inst.shield_mult = 0.8
     inst.SetDuration = function(inst, duration)

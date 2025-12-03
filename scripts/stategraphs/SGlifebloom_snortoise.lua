@@ -17,6 +17,7 @@ local function SpinningCondition(inst)
     return inst.sg:HasStateTag("spinning")
 end
 
+--[[
 local REPEL_RADIUS = 5
 local REPEL_RADIUS_SQ = REPEL_RADIUS * REPEL_RADIUS
 local function KnockbackFromTarget(inst, target, attack_knockback)
@@ -45,6 +46,7 @@ local function KnockbackFromTarget(inst, target, attack_knockback)
         end)
     end
 end
+]]--
 
 local function Check_Mob_Spin(inst)
     local x, y, z = inst.Transform:GetWorldPosition()

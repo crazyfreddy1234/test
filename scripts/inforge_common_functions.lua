@@ -220,6 +220,15 @@ local function DecodeDebuffs(data_str)
     return result
 end
 
+local function DebuffHealthDelta(inst, amount, cause, cause_target, apply_defense, effect_mult)
+    if inst and inst.components.health and not inst.components.health:IsDead() then
+        if amount and amount < 0 and apply_defense then
+            
+        end
+        inst.components.health:DoDelta(amount * (effect_mult or 1), false, cause or "NIL", nil, cause_target or nil, true)
+    end
+end
+
 return {
     TurnOnPowerAllPlayer = TurnOnPowerAllPlayer,
     TurnOffPowerAllPlayer = TurnOffPowerAllPlayer,
