@@ -98,7 +98,7 @@ STRINGS.REFORGED.DEBUFFS.debuff_flower_regen = "Calmness\n\nHeal Slowly\nGet Lon
 STRINGS.REFORGED.DEBUFFS.debuff_flower_unhit = "Absorption\n\n25% Faster Cooldown\nTurn slippery when attacking or attacked"  --바꿀떄 블로썸 파일안 AddSpice안도 바꾸기
 
 STRINGS.REFORGED.DEBUFFS.debuff_quake             = "Quake"
-STRINGS.REFORGED.DEBUFFS.debuff_quake_DESCRIPTION = "\n\nTakes 25 damage every 5 seconds"
+STRINGS.REFORGED.DEBUFFS.debuff_quake_DESCRIPTION = "\n\nTakes 25 damage every 5 seconds\nDebuff Damage modified by defense debuffs"
 
 STRINGS.NAMES.ENTHUSIASM = "Fever"
 STRINGS.NAMES.SOLITUDE = "Solitude"
