@@ -2,11 +2,11 @@ local assets = {}
 local prefabs = {}
 local MAX_LEVEL = 5
 local DAMAGE_RECEIVED_MULT_DEBUFF = 1.2
-local QUAKE_DAMAGE = 25
+local QUAKE_DAMAGE = -25
 --------------------------------------------------------------------------
 local function DecreasePlayerHealth(inst, player, amount) 
     if player and player.components.health and not player.components.health:IsDead() then
-        player.components.health:DoDelta(-amount, false, inst.cause, nil, nil, true)
+        _G.INFORGE_COMMON_FNS.DebuffHealthDelta(player, amount, inst.cause, "boarilla", true)
     end
 end
 

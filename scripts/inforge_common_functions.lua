@@ -220,12 +220,23 @@ local function DecodeDebuffs(data_str)
     return result
 end
 
-local function DebuffHealthDelta(inst, amount, cause, cause_target, apply_defense, effect_mult)
-    if inst and inst.components.health and not inst.components.health:IsDead() then
-        if amount and amount < 0 and apply_defense then
-            
+local function DebuffHealthDelta(inst, amount, cause, cause_target, apply_defense_debuff, force_mult)
+    print("[INFORGE] DAMAGE ",amount)
+    if inst and inst:IsValid() and inst.components.health and not inst.components.health:IsDead() then
+        if amount and amount < 0 and apply_defense_debuff then
+            if inst.components.combat and inst.components.combat.damagebuffs then
+                local defense_buffs = inst.components.combat.damagebuffs["recieved"] -- all defense buffs/debuffs table
+
+                for debuff_name, debuff_data in pairs(defense_buffs) do
+                    for _, defense_value in pairs(debuff_data) do
+                        amount = amount * defense_value
+                        print("[INFORGE]",amount,defense_value)
+                    end
+                end
+            end
         end
-        inst.components.health:DoDelta(amount * (effect_mult or 1), false, cause or "NIL", nil, cause_target or nil, true)
+
+        inst.components.health:DoDelta(amount * (force_mult or 1), false, cause or "NIL", nil, cause_target or nil, true)
     end
 end
 
@@ -244,4 +255,5 @@ return {
     FindTargetsPriority = FindTargetsPriority,
     EncodeDebuffs = EncodeDebuffs,
     DecodeDebuffs = DecodeDebuffs,
+    DebuffHealthDelta = DebuffHealthDelta,
 }

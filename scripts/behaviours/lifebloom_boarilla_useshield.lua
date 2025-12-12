@@ -24,11 +24,10 @@ brain is turned off when sleeping and resets all the variables, need to save imp
 LifeBloom_Boarilla_UseShield = Class(BehaviourNode, function(self, inst, damage_for_shield, shield_time, cooldown_time, hide_from_heals, hide_from_projectiles, hide_when_scared)
     BehaviourNode._ctor(self, "LifeBloom_Boarilla_UseShield")
     self.inst = inst
-	self.is_first_phase_started = false
-	self.is_second_phase_started = false
 	self.first_phase_hide_health_percent = 0.5  
 	self.second_phase_hide_health_percent = 0.1
     self.shield_broken_by_snortoise = false
+    self.phase = nil
 
     self.inst:ListenForEvent("force_knockback", function(inst)
         self.shield_broken_by_snortoise = true
@@ -38,13 +37,13 @@ end)
 function LifeBloom_Boarilla_UseShield:CheckHealth()
     local hp = self.inst.components.health:GetPercent()
 
-    if not self.is_first_phase_started
-        and hp <= self.first_phase_hide_health_percent then
+    if not self.inst.is_first_phase_started and hp <= self.first_phase_hide_health_percent then
+        print("BOARILLA PHASE START 1 ", self.inst.is_first_phase_started, hp)
         return 1
     end
 
-    if not self.is_second_phase_started
-        and hp <= self.second_phase_hide_health_percent then
+    if not self.inst.is_second_phase_started and hp <= self.second_phase_hide_health_percent then
+        print("BOARILLA PHASE START 2 ",self.inst.is_second_phase_started, hp)
         return 2
     end
 
@@ -58,29 +57,34 @@ end
 function LifeBloom_Boarilla_UseShield:Visit()
     if self.status == READY then
         if self:ShouldShield() then 
-            local phase = nil
-			if self:CheckHealth() == 1 then -- 50%
-				self.is_first_phase_started = true
-                phase = 1
-			elseif self:CheckHealth() == 2 then -- 10%
-				self.is_second_phase_started = true
-                phase = 2
+			if self:CheckHealth() == 1 and self.inst.is_first_phase_started == false then -- 50%
+				self.inst.is_first_phase_started = true
+                self.phase = 1
+			elseif self:CheckHealth() == 2 and self.inst.is_second_phase_started == false then -- 10%
+				self.inst.is_second_phase_started = true
+                self.phase = 2
 			end -- each phase runs only once
 
-			self.inst:PushEvent("enter_shield_phase",{phase = phase}) -- just jump to center
+            print("boarilla jump STAUS RUNNING", self.phase, self.inst.is_first_phase_started, self.inst.is_second_phase_started)
+			self.inst:PushEvent("enter_shield_phase",{phase = self.phase}) -- just jump to center
 			self.status = RUNNING
         else 
+            print("boarilla STAUS FAILED", self.inst.is_first_phase_started)
             self.status = FAILED
         end
     end
 
     if self.status == RUNNING then
 		if TheWorld.components.lavaarenaevent.victory == false then
+            self.phase = nil
 			self.inst:PushEvent("exitshield") -- this is not my phase.this is original boarilla exit shield status.
+            print("boarilla STAUS SUCCESS TO LOSE")
 			self.status = SUCCESS
 		end
 
         if self.shield_broken_by_snortoise == true then
+            self.phase = nil
+            print("boarilla STAUS SUCCESS TO SHIELD BROKEN")
             self.status = SUCCESS
         end
     end

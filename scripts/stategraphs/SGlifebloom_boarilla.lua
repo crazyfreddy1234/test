@@ -28,7 +28,7 @@ end
 
 local function KnockbackAllTargets(inst)
     local x, y, z = inst.Transform:GetWorldPosition()
-    local ents = TheSim:FindEntities(x, y, z, 5, nil, nil, {"LA_mob","player"})
+    local ents = TheSim:FindEntities(x, y, z, 5, nil, nil, {"LA_mob","player","character"})
 
     for i,ent in pairs(ents) do
         if ent and ent ~= inst and not (ent:HasTag("LA_mob") and ent.sg:HasStateTag("hiding")) and not ent.components.health:IsDead() then
@@ -37,15 +37,84 @@ local function KnockbackAllTargets(inst)
             else
                 COMMON_FNS.KnockbackOnHit(inst, ent, 5, tuning_values.ATTACK_KNOCKBACK, 3, true) -- TODO tuning
             end
-            ent.components.health:DoDelta(25, nil, "boarilla_quake", nil, inst.caster, true)
+            inst.components.combat:DoAttack(ent)
         end
     end
 end
 
-local function QuakeDebuffAndDamage(inst)
+local QUAKE_SNORTOISE_FRIENDLYFIRE = -100
+local function DamageAllSnortoise(inst)
+    local x, y, z = inst.Transform:GetWorldPosition()
+    local ents = TheSim:FindEntities(x, y, z, 999, nil, nil, {"LA_mob"})
+
+    for _, ent in pairs(ents) do
+        if ent and ent.components.health and ent.components.health:IsDead() then
+            ent.components.health:DoDelta(QUAKE_SNORTOISE_FRIENDLYFIRE)
+        end
+    end
+end
+
+
+
+local function PickUpToTwoAlivePlayers()
+    local vaild_players = {}
+    
+    for _, player in pairs(AllPlayers) do
+        if player and player:IsValid() and not player.components.health:IsDead() then
+            table.insert(vaild_players, player)
+        end
+    end
+
+    local vaild_players_count = #vaild_players
+    if vaild_players_count == 0 then
+        return {}                      
+    elseif vaild_players_count == 1 then
+        return { vaild_players[1] }       
+    else
+        -- 2명 이상이면 랜덤 2명
+        local p1 = vaild_players[math.random(vaild_players_count)]
+        local p2 = p1
+        while p2 == p1 do
+            p2 = vaild_players[math.random(vaild_players_count)]
+        end
+        return { p1, p2 }
+    end
+end
+
+local function IsHard() 
+    local difficulty = _G.REFORGED_SETTINGS.gameplay.difficulty or nil
+
+    if difficulty and difficulty == "hard" then
+        return true
+    else
+        return false
+    end
+end
+
+local function CreateFissureTwoPlayers(inst)
+    local players = PickUpToTwoAlivePlayers()
+    
+    for _, player in pairs(players) do
+        local fissure = nil
+
+        if IsHard() then
+            fissure = SpawnPrefab("antlion_sinkhole")
+            fissure:PushEvent("startcollapse")
+        else
+            fissure = SpawnPrefab("antlion_sinkhole")
+            fissure:PushEvent("startcollapse")
+        end
+
+        fissure.Transform:SetPosition(inst.Transform:GetWorldPosition())
+    end
+end
+
+local function QuakeDebuffAndDamage(inst) -- activate every 5sec until shield break
     SpawnQuakeFX(inst)
     AddQuakeAllPlayers(inst)
     KnockbackAllTargets(inst)
+    DamageAllSnortoise(inst)
+    CreateFissureTwoPlayers(inst)
 end
 
 local function RemoveAllQuakeDebuff(inst)
@@ -72,6 +141,10 @@ lifebloom_boarilla_sg.states["enter_shield_phase"] = State{
         inst.components.locomotor:Stop()
         ToggleOffCharacterCollisions(inst)
         inst.AnimState:PlayAnimation("attack1")
+
+        if data and data.phase == 2 then
+            inst.sg.statemem.cratefissure = true
+        end
     end,
 
     onexit = function(inst)
@@ -148,7 +221,7 @@ lifebloom_boarilla_sg.states["shield_phase_hide_start"] = State{
     name = "shield_phase_hide_start",
     tags = {"busy", "nosleep", "hide_pre", "nofreeze"}, -- TODO better tag name for hide_pre, used in shield behavior
 
-    onenter = function(inst, cb)
+    onenter = function(inst)
         inst.sg:AddStateTag("nointerrupt")
         inst.Physics:Stop()
         inst.AnimState:PlayAnimation("hide_pre")
@@ -186,7 +259,7 @@ lifebloom_boarilla_sg.states["shield_phase_hiding"] = State{
     name = "shield_phase_hiding",
     tags = {"busy", "hiding", "nosleep", "nofreeze"},
 
-    onenter = function(inst, cb)
+    onenter = function(inst)
         inst.sg:AddStateTag("nostun")
         inst.sg:AddStateTag("nosleep")
         inst.sg:AddStateTag("nointerrupt")

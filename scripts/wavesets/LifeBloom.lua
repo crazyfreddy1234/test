@@ -105,6 +105,8 @@ local function ChangeState_Boarilla(spawnedmobs)
         boarilla.components.health.redirect = PhaseImmuneDamage
 
         boarilla.count_spin_by_snortoise = 0
+        boarilla.is_first_phase_started = false
+        boarilla.is_second_phase_started = false
         boarilla.is_using_shield = false
         boarilla.get_spin_by_snortoise = function(snortoise, count)
             boarilla.count_spin_by_snortoise = boarilla.count_spin_by_snortoise + count
