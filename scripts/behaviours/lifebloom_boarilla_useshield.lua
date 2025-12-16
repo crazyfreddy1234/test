@@ -38,12 +38,10 @@ function LifeBloom_Boarilla_UseShield:CheckHealth()
     local hp = self.inst.components.health:GetPercent()
 
     if not self.inst.is_first_phase_started and hp <= self.first_phase_hide_health_percent then
-        print("BOARILLA PHASE START 1 ", self.inst.is_first_phase_started, hp)
         return 1
     end
 
     if not self.inst.is_second_phase_started and hp <= self.second_phase_hide_health_percent then
-        print("BOARILLA PHASE START 2 ",self.inst.is_second_phase_started, hp)
         return 2
     end
 
@@ -65,11 +63,9 @@ function LifeBloom_Boarilla_UseShield:Visit()
                 self.phase = 2
 			end -- each phase runs only once
 
-            print("boarilla jump STAUS RUNNING", self.phase, self.inst.is_first_phase_started, self.inst.is_second_phase_started)
 			self.inst:PushEvent("enter_shield_phase",{phase = self.phase}) -- just jump to center
 			self.status = RUNNING
         else 
-            print("boarilla STAUS FAILED", self.inst.is_first_phase_started)
             self.status = FAILED
         end
     end
@@ -78,13 +74,11 @@ function LifeBloom_Boarilla_UseShield:Visit()
 		if TheWorld.components.lavaarenaevent.victory == false then
             self.phase = nil
 			self.inst:PushEvent("exitshield") -- this is not my phase.this is original boarilla exit shield status.
-            print("boarilla STAUS SUCCESS TO LOSE")
 			self.status = SUCCESS
 		end
 
         if self.shield_broken_by_snortoise == true then
             self.phase = nil
-            print("boarilla STAUS SUCCESS TO SHIELD BROKEN")
             self.status = SUCCESS
         end
     end

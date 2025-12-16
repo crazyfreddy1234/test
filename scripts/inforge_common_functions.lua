@@ -222,7 +222,7 @@ end
 
 local function DebuffHealthDelta(inst, amount, cause, cause_target, apply_defense_debuff, force_mult)
     print("[INFORGE] DAMAGE ",amount)
-    if inst and inst:IsValid() and inst.components.health and not inst.components.health:IsDead() then
+    if inst and inst:IsValid() and inst.components and inst.components.health and not inst.components.health:IsDead() then
         if amount and amount < 0 and apply_defense_debuff then
             if inst.components.combat and inst.components.combat.damagebuffs then
                 local defense_buffs = inst.components.combat.damagebuffs["recieved"] -- all defense buffs/debuffs table

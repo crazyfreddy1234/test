@@ -92,6 +92,8 @@ local function IsHard()
 end
 
 local function CreateFissureTwoPlayers(inst)
+    if inst.is_second_phase_started ~= true then return end -- only second phase
+
     local players = PickUpToTwoAlivePlayers()
     
     for _, player in pairs(players) do
@@ -105,7 +107,7 @@ local function CreateFissureTwoPlayers(inst)
             fissure:PushEvent("startcollapse")
         end
 
-        fissure.Transform:SetPosition(inst.Transform:GetWorldPosition())
+        fissure.Transform:SetPosition(player.Transform:GetWorldPosition())
     end
 end
 
