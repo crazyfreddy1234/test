@@ -6,7 +6,7 @@ local QUAKE_DAMAGE = -25
 --------------------------------------------------------------------------
 local function DecreasePlayerHealth(inst, player, amount) 
     if player and player.components.health and not player.components.health:IsDead() then
-        _G.INFORGE_COMMON_FNS.DebuffHealthDelta(player, amount, inst.cause, "boarilla", true)
+        _G.INFORGE_COMMON_FNS.DebuffHealthDelta(player, amount, inst.cause, nil, true)
     end
 end
 

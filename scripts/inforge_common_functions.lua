@@ -220,7 +220,7 @@ local function DecodeDebuffs(data_str)
     return result
 end
 
-local function DebuffHealthDelta(inst, amount, cause, cause_target, apply_defense_debuff, force_mult)
+local function DebuffHealthDelta(inst, amount, cause, cause_target, apply_defense_debuff, force_mult) -- cause_target must be prefab
     print("[INFORGE] DAMAGE ",amount)
     if inst and inst:IsValid() and inst.components and inst.components.health and not inst.components.health:IsDead() then
         if amount and amount < 0 and apply_defense_debuff then
